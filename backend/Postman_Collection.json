@@ -2,12 +2,12 @@
 	"info": {
 		"_postman_id": "coursera-school-lms-auth",
 		"name": "Coursera School LMS - Auth & Grade 5 APIs",
-		"description": "Postman Collection for Signup, Login, and Grade 5 Term 1 Chapter 1 Course Testing",
+		"description": "Postman Collection for Signup, Login, 5 Ordered Class Steps, and Dual-Condition Lock Testing for Class 5",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
-			"name": "1. Signup (New Class 5 Student/Parent)",
+			"name": "1. Login (Class 5 Student)",
 			"request": {
 				"method": "POST",
 				"header": [
@@ -18,38 +18,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"email\": \"newstudent5@school.com\",\n  \"password\": \"student123\",\n  \"fullName\": \"Smith Sam\",\n  \"role\": \"ROLE_STUDENT\",\n  \"gradeNumber\": 5\n}"
-				},
-				"url": {
-					"raw": "http://localhost:8080/api/v1/auth/signup",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"api",
-						"v1",
-						"auth",
-						"signup"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "2. Login (Class 5 Student/Parent)",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"email\": \"newstudent5@school.com\",\n  \"password\": \"student123\"\n}"
+					"raw": "{\n  \"email\": \"student5@school.com\",\n  \"password\": \"student123\"\n}"
 				},
 				"url": {
 					"raw": "http://localhost:8080/api/v1/auth/login",
@@ -69,7 +38,7 @@
 			"response": []
 		},
 		{
-			"name": "3. Get My Enrolled Grade & Course Content",
+			"name": "2. Get My Enrolled Grade & All Day Classes",
 			"request": {
 				"auth": {
 					"type": "bearer",
@@ -101,40 +70,7 @@
 			"response": []
 		},
 		{
-			"name": "4. Get Class 5 Chapter 1 (4 Day Classes & PDF Links)",
-			"request": {
-				"auth": {
-					"type": "bearer",
-					"bearer": [
-						{
-							"key": "token",
-							"value": "{{TOKEN}}",
-							"type": "string"
-						}
-					]
-				},
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "http://localhost:8080/api/v1/courses/chapters/1",
-					"protocol": "http",
-					"host": [
-						"localhost"
-					],
-					"port": "8080",
-					"path": [
-						"api",
-						"v1",
-						"courses",
-						"chapters",
-						"1"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "5. Get Day Class Details (Class 1 Period Details)",
+			"name": "3. Get Class 5 - Class 1 Details (5 Ordered Steps)",
 			"request": {
 				"auth": {
 					"type": "bearer",
@@ -161,6 +97,207 @@
 						"courses",
 						"classes",
 						"6"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "4. Complete Step 1 (Watch Video)",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"dayClassId\": 6,\n  \"step\": \"STEP_1_VIDEO\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/student/progress/complete-step",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"student",
+						"progress",
+						"complete-step"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "5. Complete Step 2 (Topic PDF)",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"dayClassId\": 6,\n  \"step\": \"STEP_2_TOPIC_PDF\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/student/progress/complete-step",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"student",
+						"progress",
+						"complete-step"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "6. Complete Step 3 (Website Activity)",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"dayClassId\": 6,\n  \"step\": \"STEP_3_WEBSITE\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/student/progress/complete-step",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"student",
+						"progress",
+						"complete-step"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "7. Submit Quiz (Step 4)",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"quizId\": 6,\n  \"dayClassId\": 6,\n  \"answers\": {\n    \"11\": 31\n  }\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/api/v1/student/quiz/submit",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"student",
+						"quiz",
+						"submit"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "8. Attempt Class 2 (ID 7 - Locked until Class 1 completed)",
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{TOKEN}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/v1/courses/classes/7",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"v1",
+						"courses",
+						"classes",
+						"7"
 					]
 				}
 			},

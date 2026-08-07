@@ -16,6 +16,12 @@ public class StudentController {
 
     private final StudentService studentService;
 
+    @PostMapping("/progress/complete-step")
+    public ResponseEntity<Void> completeStep(@RequestBody StepProgressDto stepProgressDto, Principal principal) {
+        studentService.completeStep(stepProgressDto, principal.getName());
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/quiz/submit")
     public ResponseEntity<QuizResultDto> submitQuiz(@RequestBody QuizSubmissionDto submissionDto, Principal principal) {
         return ResponseEntity.ok(studentService.submitQuiz(submissionDto, principal.getName()));

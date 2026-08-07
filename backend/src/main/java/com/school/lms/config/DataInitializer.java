@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -28,32 +29,45 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) throws Exception {
-        log.info("Checking database initialization status...");
+        log.info("Checking database initialization and integrity status...");
 
-        // 1. Ensure Grades 3 to 10 exist
-        Grade class3 = gradeRepository.findByGradeNumber(3).orElse(null);
-        Grade class5 = gradeRepository.findByGradeNumber(5).orElse(null);
+        // 1. Ensure Grades 3 to 10 exist and names match gradeNumbers
+        Grade class3 = null;
+        Grade class5 = null;
 
-        if (class3 == null || class5 == null) {
-            log.info("Creating Grades 3 to 10...");
-            for (int i = 3; i <= 10; i++) {
-                if (gradeRepository.findByGradeNumber(i).isEmpty()) {
-                    Grade grade = Grade.builder()
-                            .gradeNumber(i)
-                            .name("Class " + i)
-                            .build();
-                    Grade saved = gradeRepository.save(grade);
-                    if (i == 3) class3 = saved;
-                    if (i == 5) class5 = saved;
+        for (int i = 3; i <= 10; i++) {
+            Optional<Grade> gradeOpt = gradeRepository.findByGradeNumber(i);
+            Grade grade;
+            if (gradeOpt.isEmpty()) {
+                grade = Grade.builder()
+                        .gradeNumber(i)
+                        .name("Class " + i)
+                        .build();
+                grade = gradeRepository.save(grade);
+            } else {
+                grade = gradeOpt.get();
+                grade.setName("Class " + i);
+                grade = gradeRepository.save(grade);
+            }
+            if (i == 3) class3 = grade;
+            if (i == 5) class5 = grade;
+        }
+
+        // 2. Fix student user grade links if mismatched
+        List<User> students = userRepository.findAll();
+        for (User u : students) {
+            if (u.getRole() == Role.ROLE_STUDENT && u.getGrade() != null) {
+                // Verify user grade's gradeNumber matches
+                Integer gn = u.getGrade().getGradeNumber();
+                Optional<Grade> correctGrade = gradeRepository.findByGradeNumber(gn);
+                if (correctGrade.isPresent() && !u.getGrade().getId().equals(correctGrade.get().getId())) {
+                    u.setGrade(correctGrade.get());
+                    userRepository.save(u);
                 }
             }
         }
 
-        if (class5 == null) {
-            class5 = gradeRepository.findByGradeNumber(5).orElseThrow();
-        }
-
-        // 2. Ensure Class 5 has Terms & Chapter 1
+        // 3. Ensure Class 5 has Terms & Chapter 1
         if (termRepository.findByGradeId(class5.getId()).isEmpty()) {
             log.info("Seeding Class 5 Term 1, Chapter 1 (Computer Skills) & 4 Day Classes...");
 
@@ -105,6 +119,20 @@ public class DataInitializer implements CommandLineRunner {
                     "Class 4: Computer Quiz, Picture Identification, Team Challenge, Oral Assessment & Practical Revision."
             };
 
+            String[] c5Videos = {
+                    "https://www.youtube.com/embed/Iv8X7aLikLE",
+                    "https://www.youtube.com/embed/Jt6mnMnRXzc",
+                    "https://www.youtube.com/embed/Xzwvr2dHxgw",
+                    "https://www.youtube.com/embed/Iv8X7aLikLE"
+            };
+
+            String[] c5Websites = {
+                    "https://www.geeksforgeeks.org/computer-science-fundamentals/computer-hardware/",
+                    "https://www.computerhope.com/jargon/k/keyboard.htm",
+                    "https://www.scribd.com/document/517654952/Do-s-and-Don-Ts-of-Computer-Lab",
+                    "https://www.geeksforgeeks.org/computer-science-fundamentals/computer-hardware/"
+            };
+
             for (int i = 1; i <= 4; i++) {
                 String topicPdfUrl = "/asset/5th class/chapter 1/class " + i + "/TOPIC COVERED.pdf";
                 String activityPdfUrl = "/asset/5th class/chapter 1/class " + i + "/practical activities.pdf";
@@ -113,12 +141,12 @@ public class DataInitializer implements CommandLineRunner {
                         .dayNumber(i)
                         .topicTitle(c5Topics[i - 1])
                         .topicDescription(c5Descriptions[i - 1])
-                        .youtubeVideoUrl("https://www.youtube.com/embed/dQw4w9WgXcQ")
-                        .externalGameUrl("https://www.mathgames.com/sl/5th-grade")
+                        .youtubeVideoUrl(c5Videos[i - 1])
+                        .externalGameUrl(c5Websites[i - 1])
                         .taskInstructions("Practical Activity: " + c5Activities[i - 1] + " (Refer to attached PDFs for details)")
                         .topicsCoveredPdfUrl(topicPdfUrl)
                         .practicalActivitiesPdfUrl(activityPdfUrl)
-                        .isUnlocked(true) // Unlocked for student testing
+                        .isUnlocked(true) // Admin unlocked
                         .chapter(chapter1Class5)
                         .build();
 
@@ -146,7 +174,7 @@ public class DataInitializer implements CommandLineRunner {
             }
         }
 
-        // 3. Ensure test users exist
+        // 4. Ensure test users exist
         if (!userRepository.existsByEmail("student5@school.com")) {
             User student5 = User.builder()
                     .email("student5@school.com")
@@ -155,6 +183,10 @@ public class DataInitializer implements CommandLineRunner {
                     .role(Role.ROLE_STUDENT)
                     .grade(class5)
                     .build();
+            userRepository.save(student5);
+        } else {
+            User student5 = userRepository.findByEmail("student5@school.com").get();
+            student5.setGrade(class5);
             userRepository.save(student5);
         }
 
@@ -178,6 +210,6 @@ public class DataInitializer implements CommandLineRunner {
             userRepository.save(teacher);
         }
 
-        log.info("Database check & seeding complete!");
+        log.info("Database check & auto-repair complete!");
     }
 }

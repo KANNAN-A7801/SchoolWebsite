@@ -25,6 +25,37 @@ public class StudentService {
     private final StudentProgressRepository studentProgressRepository;
     private final SupabaseStorageService supabaseStorageService;
 
+    public StudentProgress completeStep(StepProgressDto dto, String userEmail) {
+        User student = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        DayClass dayClass = dayClassRepository.findById(dto.getDayClassId())
+                .orElseThrow(() -> new RuntimeException("Day Class not found"));
+
+        StudentProgress progress = studentProgressRepository.findByStudentIdAndDayClassId(student.getId(), dayClass.getId())
+                .orElse(StudentProgress.builder()
+                        .student(student)
+                        .dayClass(dayClass)
+                        .videoCompleted(false)
+                        .topicPdfCompleted(false)
+                        .gameCompleted(false)
+                        .quizCompleted(false)
+                        .taskCompleted(false)
+                        .classCompleted(false)
+                        .build());
+
+        if ("STEP_1_VIDEO".equalsIgnoreCase(dto.getStep())) {
+            progress.setVideoCompleted(true);
+        } else if ("STEP_2_TOPIC_PDF".equalsIgnoreCase(dto.getStep())) {
+            progress.setTopicPdfCompleted(true);
+        } else if ("STEP_3_WEBSITE".equalsIgnoreCase(dto.getStep())) {
+            progress.setGameCompleted(true);
+        }
+
+        checkAndMarkClassCompletion(progress);
+        return studentProgressRepository.save(progress);
+    }
+
     public QuizResultDto submitQuiz(QuizSubmissionDto submissionDto, String userEmail) {
         User student = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
@@ -59,18 +90,16 @@ public class StudentService {
                         .student(student)
                         .dayClass(dayClass)
                         .videoCompleted(false)
+                        .topicPdfCompleted(false)
                         .gameCompleted(false)
                         .quizCompleted(false)
                         .taskCompleted(false)
                         .classCompleted(false)
                         .build());
 
-        progress.setQuizCompleted(true);
+        progress.setQuizCompleted(passed);
         progress.setQuizScore(scorePercentage);
-        if (passed && Boolean.TRUE.equals(progress.getVideoCompleted()) && Boolean.TRUE.equals(progress.getTaskCompleted())) {
-            progress.setClassCompleted(true);
-            progress.setCompletedAt(LocalDateTime.now());
-        }
+        checkAndMarkClassCompletion(progress);
         studentProgressRepository.save(progress);
 
         return QuizResultDto.builder()
@@ -111,6 +140,7 @@ public class StudentService {
                         .student(student)
                         .dayClass(dayClass)
                         .videoCompleted(false)
+                        .topicPdfCompleted(false)
                         .gameCompleted(false)
                         .quizCompleted(false)
                         .taskCompleted(false)
@@ -118,6 +148,7 @@ public class StudentService {
                         .build());
 
         progress.setTaskCompleted(true);
+        checkAndMarkClassCompletion(progress);
         studentProgressRepository.save(progress);
 
         return SubmissionDto.builder()
@@ -130,6 +161,21 @@ public class StudentService {
                 .status(saved.getStatus())
                 .submittedAt(saved.getSubmittedAt())
                 .build();
+    }
+
+    private void checkAndMarkClassCompletion(StudentProgress progress) {
+        boolean all5StepsDone = Boolean.TRUE.equals(progress.getVideoCompleted()) &&
+                Boolean.TRUE.equals(progress.getTopicPdfCompleted()) &&
+                Boolean.TRUE.equals(progress.getGameCompleted()) &&
+                Boolean.TRUE.equals(progress.getQuizCompleted()) &&
+                Boolean.TRUE.equals(progress.getTaskCompleted());
+
+        if (all5StepsDone) {
+            progress.setClassCompleted(true);
+            if (progress.getCompletedAt() == null) {
+                progress.setCompletedAt(LocalDateTime.now());
+            }
+        }
     }
 
     @Transactional(readOnly = true)
@@ -182,7 +228,7 @@ public class StudentService {
                 .email(student.getEmail())
                 .gradeNumber(student.getGrade() != null ? student.getGrade().getGradeNumber() : null)
                 .completedClassesCount(completedClasses)
-                .totalClassesCount(5) // Focus for Term 1 Chapter 1
+                .totalClassesCount(4) // 4 Day Classes for Grade 5 Chapter 1
                 .attendanceHistory(attendanceDtos)
                 .dailyReports(reportDtos)
                 .taskSubmissions(submissionDtos)
