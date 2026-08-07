@@ -29,6 +29,9 @@ public class StudentProgress {
     @Column(name = "video_completed", nullable = false)
     private Boolean videoCompleted;
 
+    @Column(name = "topic_pdf_completed", nullable = false)
+    private Boolean topicPdfCompleted;
+
     @Column(name = "game_completed", nullable = false)
     private Boolean gameCompleted;
 

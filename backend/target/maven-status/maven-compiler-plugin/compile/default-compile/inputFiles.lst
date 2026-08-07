@@ -10,6 +10,7 @@ D:\ENGLORAY\Education\backend\src\main\java\com\school\lms\dto\AuthResponse.java
 D:\ENGLORAY\Education\backend\src\main\java\com\school\lms\security\SecurityConfig.java
 D:\ENGLORAY\Education\backend\src\main\java\com\school\lms\repository\GradeRepository.java
 D:\ENGLORAY\Education\backend\src\main\java\com\school\lms\security\JwtAuthenticationFilter.java
+D:\ENGLORAY\Education\backend\src\main\java\com\school\lms\dto\StepProgressDto.java
 D:\ENGLORAY\Education\backend\src\main\java\com\school\lms\repository\TermRepository.java
 D:\ENGLORAY\Education\backend\src\main\java\com\school\lms\entity\Term.java
 D:\ENGLORAY\Education\backend\src\main\java\com\school\lms\service\AuthService.java

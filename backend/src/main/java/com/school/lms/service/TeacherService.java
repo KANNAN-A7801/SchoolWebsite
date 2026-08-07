@@ -32,7 +32,8 @@ public class TeacherService {
                 .dayNumber(updated.getDayNumber())
                 .topicTitle(updated.getTopicTitle())
                 .topicDescription(updated.getTopicDescription())
-                .isUnlocked(updated.getIsUnlocked())
+                .isUnlockedByAdmin(updated.getIsUnlocked())
+                .isAccessibleForStudent(updated.getIsUnlocked())
                 .build();
     }
 

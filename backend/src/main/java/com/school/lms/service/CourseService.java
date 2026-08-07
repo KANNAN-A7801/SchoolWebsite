@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +20,8 @@ public class CourseService {
     private final ChapterRepository chapterRepository;
     private final DayClassRepository dayClassRepository;
     private final UserRepository userRepository;
+    private final StudentProgressRepository studentProgressRepository;
+    private final SubmissionRepository submissionRepository;
 
     public List<GradeDto> getAllGrades(String currentUserEmail) {
         User user = userRepository.findByEmail(currentUserEmail)
@@ -29,7 +32,7 @@ public class CourseService {
         return grades.stream().map(grade -> {
             boolean isAccessible = user.getRole() == Role.ROLE_ADMIN ||
                     user.getRole() == Role.ROLE_TEACHER ||
-                    (user.getGrade() != null && user.getGrade().getId().equals(grade.getId()));
+                    (user.getGrade() != null && user.getGrade().getGradeNumber().equals(grade.getGradeNumber()));
 
             return GradeDto.builder()
                     .id(grade.getId())
@@ -58,9 +61,9 @@ public class CourseService {
         Grade grade = gradeRepository.findById(gradeId)
                 .orElseThrow(() -> new RuntimeException("Grade not found"));
 
-        // Enforce Grade Lock for Student
+        // Enforce Grade Lock for Student by Grade Number
         if (user.getRole() == Role.ROLE_STUDENT &&
-            (user.getGrade() == null || !user.getGrade().getId().equals(grade.getId()))) {
+            (user.getGrade() == null || !user.getGrade().getGradeNumber().equals(grade.getGradeNumber()))) {
             throw new RuntimeException("ACCESS_DENIED: Standard/Grade is locked for your account!");
         }
 
@@ -68,13 +71,19 @@ public class CourseService {
 
         List<TermDto> termDtos = terms.stream().map(term -> {
             List<Chapter> chapters = chapterRepository.findByTermIdOrderByChapterNumberAsc(term.getId());
-            List<ChapterDto> chapterDtos = chapters.stream().map(ch -> ChapterDto.builder()
-                    .id(ch.getId())
-                    .chapterNumber(ch.getChapterNumber())
-                    .title(ch.getTitle())
-                    .description(ch.getDescription())
-                    .isLocked(ch.getIsLocked())
-                    .build()).toList();
+            List<ChapterDto> chapterDtos = chapters.stream().map(ch -> {
+                List<DayClass> dayClasses = dayClassRepository.findByChapterIdOrderByDayNumberAsc(ch.getId());
+                List<DayClassDto> dayClassDtos = dayClasses.stream().map(dc -> buildDayClassSummaryDto(dc, user)).toList();
+
+                return ChapterDto.builder()
+                        .id(ch.getId())
+                        .chapterNumber(ch.getChapterNumber())
+                        .title(ch.getTitle())
+                        .description(ch.getDescription())
+                        .isLocked(ch.getIsLocked())
+                        .dayClasses(dayClassDtos)
+                        .build();
+            }).toList();
 
             return TermDto.builder()
                     .id(term.getId())
@@ -100,9 +109,9 @@ public class CourseService {
         Chapter chapter = chapterRepository.findById(chapterId)
                 .orElseThrow(() -> new RuntimeException("Chapter not found"));
 
-        // Verify Grade Lock
+        // Verify Grade Lock by Grade Number
         if (user.getRole() == Role.ROLE_STUDENT &&
-            (user.getGrade() == null || !user.getGrade().getId().equals(chapter.getTerm().getGrade().getId()))) {
+            (user.getGrade() == null || !user.getGrade().getGradeNumber().equals(chapter.getTerm().getGrade().getGradeNumber()))) {
             throw new RuntimeException("ACCESS_DENIED: Standard/Grade is locked for your account!");
         }
 
@@ -112,16 +121,7 @@ public class CourseService {
         }
 
         List<DayClass> dayClasses = dayClassRepository.findByChapterIdOrderByDayNumberAsc(chapterId);
-
-        List<DayClassDto> dayClassDtos = dayClasses.stream().map(dc -> DayClassDto.builder()
-                .id(dc.getId())
-                .dayNumber(dc.getDayNumber())
-                .topicTitle(dc.getTopicTitle())
-                .topicDescription(dc.getTopicDescription())
-                .topicsCoveredPdfUrl(dc.getTopicsCoveredPdfUrl())
-                .practicalActivitiesPdfUrl(dc.getPracticalActivitiesPdfUrl())
-                .isUnlocked(dc.getIsUnlocked())
-                .build()).toList();
+        List<DayClassDto> dayClassDtos = dayClasses.stream().map(dc -> buildDayClassSummaryDto(dc, user)).toList();
 
         return ChapterDto.builder()
                 .id(chapter.getId())
@@ -143,9 +143,9 @@ public class CourseService {
         Chapter chapter = dayClass.getChapter();
         Grade grade = chapter.getTerm().getGrade();
 
-        // Enforce Grade Lock
+        // Enforce Grade Lock by Grade Number
         if (user.getRole() == Role.ROLE_STUDENT &&
-            (user.getGrade() == null || !user.getGrade().getId().equals(grade.getId()))) {
+            (user.getGrade() == null || !user.getGrade().getGradeNumber().equals(grade.getGradeNumber()))) {
             throw new RuntimeException("ACCESS_DENIED: Standard/Grade is locked for your account!");
         }
 
@@ -154,11 +154,37 @@ public class CourseService {
             throw new RuntimeException("ACCESS_DENIED: Chapter is locked!");
         }
 
-        // Enforce Day Class Lock
-        if (user.getRole() == Role.ROLE_STUDENT && Boolean.FALSE.equals(dayClass.getIsUnlocked())) {
-            throw new RuntimeException("ACCESS_DENIED: Day class period is locked by teacher!");
+        // Dual-Condition Progression Check
+        boolean isUnlockedByAdmin = Boolean.TRUE.equals(dayClass.getIsUnlocked());
+        boolean isPrerequisiteCompleted = true;
+
+        if (dayClass.getDayNumber() > 1) {
+            Optional<DayClass> prevClassOpt = dayClassRepository.findByChapterIdAndDayNumber(chapter.getId(), dayClass.getDayNumber() - 1);
+            if (prevClassOpt.isPresent()) {
+                Optional<StudentProgress> prevProgressOpt = studentProgressRepository.findByStudentIdAndDayClassId(user.getId(), prevClassOpt.get().getId());
+                isPrerequisiteCompleted = prevProgressOpt.isPresent() && Boolean.TRUE.equals(prevProgressOpt.get().getClassCompleted());
+            }
         }
 
+        boolean isAccessible = isUnlockedByAdmin && isPrerequisiteCompleted;
+
+        if (user.getRole() == Role.ROLE_STUDENT) {
+            if (!isUnlockedByAdmin) {
+                throw new RuntimeException("ACCESS_DENIED: Class " + dayClass.getDayNumber() + " is locked by Admin/Teacher!");
+            }
+            if (!isPrerequisiteCompleted) {
+                throw new RuntimeException("ACCESS_DENIED: Please complete all 5 steps of Class " + (dayClass.getDayNumber() - 1) + " before accessing Class " + dayClass.getDayNumber() + "!");
+            }
+        }
+
+        // Fetch Student Progress & Submissions
+        Optional<StudentProgress> progressOpt = studentProgressRepository.findByStudentIdAndDayClassId(user.getId(), dayClass.getId());
+        Optional<Submission> submissionOpt = submissionRepository.findByStudentIdAndDayClassId(user.getId(), dayClass.getId());
+
+        StudentProgress progress = progressOpt.orElse(null);
+        Submission submission = submissionOpt.orElse(null);
+
+        // Build Quiz DTO
         QuizDto quizDto = null;
         if (dayClass.getQuiz() != null) {
             Quiz quiz = dayClass.getQuiz();
@@ -182,18 +208,104 @@ public class CourseService {
                     .build();
         }
 
+        // Build Submission DTO
+        SubmissionDto submissionDto = null;
+        if (submission != null) {
+            submissionDto = SubmissionDto.builder()
+                    .id(submission.getId())
+                    .studentId(user.getId())
+                    .studentName(user.getFullName())
+                    .dayClassId(dayClass.getId())
+                    .fileUrl(submission.getFileUrl())
+                    .fileName(submission.getFileName())
+                    .status(submission.getStatus())
+                    .score(submission.getScore())
+                    .teacherFeedback(submission.getTeacherFeedback())
+                    .submittedAt(submission.getSubmittedAt())
+                    .build();
+        }
+
+        // Build 5 Ordered Steps
+        DayClassDto.Step1VideoDto step1 = DayClassDto.Step1VideoDto.builder()
+                .stepNumber(1)
+                .title("Step a: Watch Class Video")
+                .videoUrl(dayClass.getYoutubeVideoUrl())
+                .isCompleted(progress != null && Boolean.TRUE.equals(progress.getVideoCompleted()))
+                .build();
+
+        DayClassDto.Step2TopicPdfDto step2 = DayClassDto.Step2TopicPdfDto.builder()
+                .stepNumber(2)
+                .title("Step b: Topics Covered Document")
+                .pdfUrl(dayClass.getTopicsCoveredPdfUrl())
+                .isCompleted(progress != null && Boolean.TRUE.equals(progress.getTopicPdfCompleted()))
+                .build();
+
+        DayClassDto.Step3WebsiteDto step3 = DayClassDto.Step3WebsiteDto.builder()
+                .stepNumber(3)
+                .title("Step c: Interactive Educational Website Activity")
+                .websiteUrl(dayClass.getExternalGameUrl())
+                .isCompleted(progress != null && Boolean.TRUE.equals(progress.getGameCompleted()))
+                .build();
+
+        DayClassDto.Step4QuizDto step4 = DayClassDto.Step4QuizDto.builder()
+                .stepNumber(4)
+                .title("Step d: Concept Quiz")
+                .quiz(quizDto)
+                .passingScore(quizDto != null ? quizDto.getPassingScore() : 80)
+                .isCompleted(progress != null && Boolean.TRUE.equals(progress.getQuizCompleted()))
+                .lastScore(progress != null ? progress.getQuizScore() : null)
+                .build();
+
+        DayClassDto.Step5TaskDto step5 = DayClassDto.Step5TaskDto.builder()
+                .stepNumber(5)
+                .title("Step e: Practical Activity & Task Upload")
+                .taskInstructions(dayClass.getTaskInstructions())
+                .practicalActivitiesPdfUrl(dayClass.getPracticalActivitiesPdfUrl())
+                .isCompleted(progress != null && Boolean.TRUE.equals(progress.getTaskCompleted()))
+                .lastSubmission(submissionDto)
+                .build();
+
         return DayClassDto.builder()
                 .id(dayClass.getId())
                 .dayNumber(dayClass.getDayNumber())
                 .topicTitle(dayClass.getTopicTitle())
                 .topicDescription(dayClass.getTopicDescription())
-                .youtubeVideoUrl(dayClass.getYoutubeVideoUrl())
-                .externalGameUrl(dayClass.getExternalGameUrl())
-                .taskInstructions(dayClass.getTaskInstructions())
-                .topicsCoveredPdfUrl(dayClass.getTopicsCoveredPdfUrl())
-                .practicalActivitiesPdfUrl(dayClass.getPracticalActivitiesPdfUrl())
-                .isUnlocked(dayClass.getIsUnlocked())
-                .quiz(quizDto)
+                .isUnlockedByAdmin(isUnlockedByAdmin)
+                .isPrerequisiteCompleted(isPrerequisiteCompleted)
+                .isAccessibleForStudent(isAccessible)
+                .isClassFullyCompleted(progress != null && Boolean.TRUE.equals(progress.getClassCompleted()))
+                .step1Video(step1)
+                .step2TopicPdf(step2)
+                .step3Website(step3)
+                .step4Quiz(step4)
+                .step5Task(step5)
+                .build();
+    }
+
+    private DayClassDto buildDayClassSummaryDto(DayClass dc, User user) {
+        boolean isUnlockedByAdmin = Boolean.TRUE.equals(dc.getIsUnlocked());
+        boolean isPrerequisiteCompleted = true;
+
+        if (dc.getDayNumber() > 1) {
+            Optional<DayClass> prevClassOpt = dayClassRepository.findByChapterIdAndDayNumber(dc.getChapter().getId(), dc.getDayNumber() - 1);
+            if (prevClassOpt.isPresent()) {
+                Optional<StudentProgress> prevProgressOpt = studentProgressRepository.findByStudentIdAndDayClassId(user.getId(), prevClassOpt.get().getId());
+                isPrerequisiteCompleted = prevProgressOpt.isPresent() && Boolean.TRUE.equals(prevProgressOpt.get().getClassCompleted());
+            }
+        }
+
+        boolean isAccessible = isUnlockedByAdmin && isPrerequisiteCompleted;
+        Optional<StudentProgress> progressOpt = studentProgressRepository.findByStudentIdAndDayClassId(user.getId(), dc.getId());
+
+        return DayClassDto.builder()
+                .id(dc.getId())
+                .dayNumber(dc.getDayNumber())
+                .topicTitle(dc.getTopicTitle())
+                .topicDescription(dc.getTopicDescription())
+                .isUnlockedByAdmin(isUnlockedByAdmin)
+                .isPrerequisiteCompleted(isPrerequisiteCompleted)
+                .isAccessibleForStudent(isAccessible)
+                .isClassFullyCompleted(progressOpt.isPresent() && Boolean.TRUE.equals(progressOpt.get().getClassCompleted()))
                 .build();
     }
 }
