@@ -1,0 +1,20 @@
+{
+  "name": "engloray-learning-frontend",
+  "version": "1.0.0",
+  "description": "Engloray Learning LMS Frontend - Grade 5 Computer Skills",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve -l 3000",
+    "dev": "npx serve -l 3000"
+  },
+  "keywords": [
+    "lms",
+    "education",
+    "engloray"
+  ],
+  "author": "Engloray Learning",
+  "license": "ISC",
+  "devDependencies": {
+    "serve": "^14.2.1"
+  }
+}
