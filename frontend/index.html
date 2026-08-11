@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Engloray Learning LMS - Grade 5 Computer Skills</title>
+  <meta name="description" content="Interactive Class 5 Learning Management System - Chapter 1 Computer Fundamentals">
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="header-top-row">
+        <div class="brand-logo" id="logoHeaderHome" style="cursor: pointer;">
+          <img src="logo.png" alt="Engloray Learning Logo" class="logo-image">
+          <div class="logo-text">
+            <!-- <span class="brand-title">ENGLORAY LEARNING</span> -->
+            <!-- <span class="brand-subtitle">LMS Platform</span> -->
+          </div>
+        </div>
+
+        <div class="user-profile-menu">
+          <div class="user-info">
+            <span class="user-name" id="userFullName">Smith Sam</span>
+            <span class="user-role"><i class="fa-solid fa-user-graduate"></i> Class 5 Student</span>
+          </div>
+          <div class="avatar-circle">SS</div>
+        </div>
+      </div>
+
+      <div class="course-breadcrumb">
+        <span class="badge badge-primary"><i class="fa-solid fa-layer-group"></i> Grade 5</span>
+        <i class="fa-solid fa-chevron-right breadcrumb-separator"></i>
+        <span class="breadcrumb-item">Term 1</span>
+        <i class="fa-solid fa-chevron-right breadcrumb-separator"></i>
+        <span class="breadcrumb-item active" id="breadcrumbChapterTitle">Chapter 1: Computer Skills</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="app-container">
+
+    <!-- VIEW 1: COURSE OVERVIEW PAGE (GRID OF ALL CLASSES FOR GRADE 5) -->
+    <section id="courseOverviewPage" class="course-overview-container hidden">
+      <div class="overview-hero-card">
+        <div class="hero-badge">
+          <span class="badge badge-primary" style="background: rgba(255,255,255,0.2); color: white; border: none;">
+            <i class="fa-solid fa-book-open"></i> Grade 5 • Term 1
+          </span>
+        </div>
+        <h1>Chapter 1: Computer Skills & Hardware Devices</h1>
+        <p>Explore computer fundamentals, input/output peripherals, digital ethics, and practical activity worksheets.
+        </p>
+      </div>
+
+      <div class="classes-grid-header">
+        <h2><i class="fa-solid fa-list-check text-blue"></i> Daily Classes Schedule</h2>
+        <p>Click on any unlocked class to open its 5-step interactive learning page.</p>
+      </div>
+
+      <div class="classes-grid" id="courseClassesGrid">
+        <!-- Dynamically rendered from coursesData.js -->
+      </div>
+    </section>
+
+    <!-- VIEW 2: DYNAMIC 5-STEP CLASS LEARNING PAGE -->
+    <section id="classLearningPage" class="content-grid">
+
+      <!-- Left Main Column (70%) -->
+      <div class="main-content">
+
+        <!-- Class Header & Title Card -->
+        <div class="class-hero-card">
+          <div class="hero-badge">
+            <span class="badge badge-accent" id="activeDayBadge">Class 1 of 4</span>
+            <span class="badge badge-success" id="overallCompletionBadge"><i class="fa-solid fa-spinner fa-spin"></i> In
+              Progress (0/5 Steps)</span>
+          </div>
+          <h1 class="class-title" id="classTopicTitle">Class 1: Computer Fundamentals, Hardware Devices & Computer
+            System</h1>
+          <p class="class-description" id="classTopicDescription">
+            Topics Covered: Introduction to Computers, Computer Fundamentals, Computer System...
+          </p>
+        </div>
+
+        <!-- 5 Ordered Learning Steps Container -->
+        <div class="steps-wrapper">
+
+          <!-- Step 1: Watch Video -->
+          <article class="step-card" id="step1Container">
+            <div class="step-header">
+              <div class="step-number-badge step-1">a</div>
+              <div class="step-header-text">
+                <h3 id="step1Title">Step 1: Watch Class Video</h3>
+                <p id="step1Desc">Watch the complete lesson video to understand hardware devices & computer
+                  fundamentals.</p>
+              </div>
+              <div class="step-status" id="step1StatusBadge">
+                <span class="badge badge-neutral"><i class="fa-regular fa-circle"></i> Pending</span>
+              </div>
+            </div>
+
+            <div class="step-body">
+              <div class="video-container">
+                <iframe id="youtubeIframe" src="https://www.youtube.com/embed/Iv8X7aLikLE" title="Class Video"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowfullscreen>
+                </iframe>
+              </div>
+              <div class="step-actions">
+                <button class="btn btn-primary" id="btnCompleteStep1">
+                  <i class="fa-solid fa-circle-check"></i> Mark Video as Watched
+                </button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Step 2: Topics Covered PDF -->
+          <article class="step-card" id="step2Container">
+            <div class="step-header">
+              <div class="step-number-badge step-2">b</div>
+              <div class="step-header-text">
+                <h3 id="step2Title">Step 2: Review Topics Covered</h3>
+                <p id="step2Desc">Read through the detailed topic documentation and download reference material.</p>
+              </div>
+              <div class="step-status" id="step2StatusBadge">
+                <span class="badge badge-neutral"><i class="fa-regular fa-circle"></i> Pending</span>
+              </div>
+            </div>
+
+            <div class="step-body">
+              <div class="doc-preview-box">
+                <div class="doc-icon"><i class="fa-solid fa-file-pdf"></i></div>
+                <div class="doc-details">
+                  <h4 id="topicPdfTitle">TOPIC COVERED.pdf</h4>
+                  <p id="topicPdfSubtext">Comprehensive breakdown of Computer Systems, Internal vs External Hardware &
+                    Peripherals.</p>
+                </div>
+                <div class="doc-actions">
+                  <a href="/asset/5th class/chapter 1/class 1/TOPIC COVERED.pdf" target="_blank" class="btn btn-outline"
+                    id="linkTopicPdf">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Open PDF Document
+                  </a>
+                </div>
+              </div>
+
+              <div class="topics-bullet-list">
+                <h4><i class="fa-solid fa-list-check"></i> Key Concepts Covered:</h4>
+                <ul id="keyConceptsList">
+                  <!-- Dynamically rendered -->
+                </ul>
+              </div>
+
+              <div class="step-actions">
+                <button class="btn btn-primary" id="btnCompleteStep2">
+                  <i class="fa-solid fa-book-open-reader"></i> Confirm Topic Reviewed
+                </button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Step 3: Interactive Educational Website -->
+          <article class="step-card" id="step3Container">
+            <div class="step-header">
+              <div class="step-number-badge step-3">c</div>
+              <div class="step-header-text">
+                <h3 id="step3Title">Step 3: Interactive Learning Activity</h3>
+                <p id="step3Desc">Explore the educational website link for hands-on interactive tutorials & diagrams.
+                </p>
+              </div>
+              <div class="step-status" id="step3StatusBadge">
+                <span class="badge badge-neutral"><i class="fa-regular fa-circle"></i> Pending</span>
+              </div>
+            </div>
+
+            <div class="step-body">
+              <div class="website-card">
+                <div class="web-preview-icon">
+                  <i class="fa-solid fa-globe"></i>
+                </div>
+                <div class="web-info">
+                  <h4 id="portalNameText">GeeksforGeeks - Computer Hardware Fundamentals</h4>
+                  <p id="websiteUrlText">https://www.geeksforgeeks.org/computer-science-fundamentals/computer-hardware/
+                  </p>
+                  <span class="badge badge-info"><i class="fa-solid fa-up-right-from-square"></i> External Learning
+                    Portal</span>
+                </div>
+                <a href="#" target="_blank" class="btn btn-accent" id="linkWebsite">
+                  <i class="fa-solid fa-external-link"></i> Launch Portal
+                </a>
+              </div>
+
+              <div class="step-actions">
+                <button class="btn btn-primary" id="btnCompleteStep3">
+                  <i class="fa-solid fa-square-check"></i> Mark Activity Complete
+                </button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Step 4: Concept Quiz -->
+          <article class="step-card" id="step4Container">
+            <div class="step-header">
+              <div class="step-number-badge step-4">d</div>
+              <div class="step-header-text">
+                <h3 id="step4Title">Step 4: Concept Check Quiz</h3>
+                <p id="step4Desc">Test your knowledge. Passing score is <strong id="passingScoreText">80%</strong>.</p>
+              </div>
+              <div class="step-status" id="step4StatusBadge">
+                <span class="badge badge-neutral"><i class="fa-regular fa-circle"></i> Pending</span>
+              </div>
+            </div>
+
+            <div class="step-body">
+              <div class="quiz-box">
+                <div class="quiz-question-card">
+                  <span class="question-num">Question 1 of 1</span>
+                  <h4 class="question-text" id="quizQuestionText">Which component is considered internal hardware?</h4>
+
+                  <div class="quiz-options-group" id="quizOptionsContainer">
+                    <!-- Dynamically rendered -->
+                  </div>
+                </div>
+
+                <div class="quiz-result-message hidden" id="quizResultBox">
+                  <div class="result-alert" id="resultAlertBanner">
+                    <i class="fa-solid fa-trophy"></i>
+                    <div>
+                      <h4 id="resultTitle">Quiz Passed!</h4>
+                      <p id="resultSubtitle">You scored 100% (Passing Score: 80%)</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="step-actions">
+                  <button class="btn btn-success" id="btnSubmitQuiz">
+                    <i class="fa-solid fa-paper-plane"></i> Submit Quiz Answers
+                  </button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- Step 5: Practical Task & Upload -->
+          <article class="step-card" id="step5Container">
+            <div class="step-header">
+              <div class="step-number-badge step-5">e</div>
+              <div class="step-header-text">
+                <h3 id="step5Title">Step 5: Practical Activity & Task Submission</h3>
+                <p id="step5Desc">Complete the practical worksheet and upload your completed document or picture.</p>
+              </div>
+              <div class="step-status" id="step5StatusBadge">
+                <span class="badge badge-neutral"><i class="fa-regular fa-circle"></i> Pending</span>
+              </div>
+            </div>
+
+            <div class="step-body">
+              <div class="task-instructions-card">
+                <div class="task-icon"><i class="fa-solid fa-pen-ruler"></i></div>
+                <div class="task-details">
+                  <h4>Practical Activity Instructions</h4>
+                  <p id="taskInstructionsText">Class 1: Hardware Device Identification, Computer System Labeling
+                    Activity & Picture Matching Worksheet. Refer to the practical activity document below.</p>
+                  <a href="/asset/5th class/chapter 1/class 1/practical activities.pdf" target="_blank"
+                    class="btn btn-sm btn-outline" id="linkPracticalPdf">
+                    <i class="fa-solid fa-file-pdf"></i> Download Practical Worksheet (PDF)
+                  </a>
+                </div>
+              </div>
+
+              <!-- Upload Container -->
+              <div class="upload-dropzone" id="dropzone">
+                <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+                <div class="upload-text">
+                  <h4>Drag and drop your completed file here</h4>
+                  <p>Supports PDF, DOCX, PNG, JPG up to 10MB</p>
+                </div>
+                <input type="file" id="fileInput" class="file-input-hidden">
+                <button class="btn btn-outline btn-sm" id="btnBrowseFile">
+                  <i class="fa-solid fa-folder-open"></i> Browse File
+                </button>
+                <div class="selected-file-name hidden" id="selectedFileInfo">
+                  <i class="fa-solid fa-file-circle-check text-blue"></i>
+                  <span id="fileNameDisplay">my_worksheet.pdf</span>
+                  <button type="button" class="btn-clear-file" id="btnClearFile"><i
+                      class="fa-solid fa-xmark"></i></button>
+                </div>
+              </div>
+
+              <div class="submission-status-card hidden" id="submissionStatusBox">
+                <div class="sub-icon"><i class="fa-solid fa-circle-check text-success"></i></div>
+                <div>
+                  <h4>Assignment Submitted Successfully</h4>
+                  <p id="submissionMetaText">File: class1_worksheet.pdf • Status: SUBMITTED</p>
+                </div>
+              </div>
+
+              <div class="step-actions">
+                <button class="btn btn-primary btn-lg" id="btnSubmitTask">
+                  <i class="fa-solid fa-upload"></i> Upload & Submit Assignment
+                </button>
+              </div>
+            </div>
+          </article>
+
+          <!-- Navigation Footer Bar -->
+          <div class="course-navigation-footer">
+            <button class="btn btn-primary btn-lg" id="btnBackToCourse">
+              <i class="fa-solid fa-arrow-left"></i> Back to Course Page
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Right Column Sidebar (30%) -->
+      <aside class="sidebar-content">
+
+        <!-- Progression Lock Status Card -->
+        <div class="sidebar-card lock-status-card">
+          <div class="sidebar-card-header">
+            <h3><i class="fa-solid fa-lock-open text-blue"></i> Class Progression Engine</h3>
+          </div>
+          <div class="progression-summary">
+            <div class="progress-ring-container">
+              <svg class="progress-ring" width="100" height="100">
+                <circle class="progress-ring-bg" cx="50" cy="50" r="40" />
+                <circle class="progress-ring-fill" id="progressRingFill" cx="50" cy="50" r="40" />
+              </svg>
+              <div class="progress-ring-text" id="progressPercentageText">0%</div>
+            </div>
+            <div class="progression-info">
+              <h4 id="progressionStatusTitle">Class 1 In Progress</h4>
+              <p id="progressionSubtitleText">Complete all 5 steps of this class.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chapter Classes Navigation List -->
+        <div class="sidebar-card nav-list-card">
+          <div class="sidebar-card-header">
+            <h3><i class="fa-solid fa-list-ol"></i> Chapter 1 Classes</h3>
+          </div>
+
+          <div class="class-nav-list" id="sidebarClassNavList">
+            <!-- Dynamically rendered from JSON -->
+          </div>
+        </div>
+
+        <!-- Quick Assets Card -->
+        <div class="sidebar-card assets-card">
+          <div class="sidebar-card-header">
+            <h3><i class="fa-solid fa-folder-open"></i> Chapter 1 Assets</h3>
+          </div>
+          <div class="assets-list" id="sidebarAssetsList">
+            <!-- Dynamically rendered -->
+          </div>
+        </div>
+
+      </aside>
+
+    </section>
+  </main>
+
+  <!-- Notification Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Load Central JSON Dataset first, then Application logic -->
+  <script src="coursesData.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>
