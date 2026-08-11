@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     courseClassesGrid: document.getElementById('courseClassesGrid'),
     logoHeaderHome: document.getElementById('logoHeaderHome'),
     btnBackToCourse: document.getElementById('btnBackToCourse'),
+    gradeSelectDropdown: document.getElementById('gradeSelectDropdown'),
 
     // Hero Header
     activeDayBadge: document.getElementById('activeDayBadge'),
@@ -102,8 +103,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setupStepActions();
     setupFileUpload();
 
-    // Default: Load Class 1 Learning View
-    loadClassView(6);
+    const selectedGrade = elements.gradeSelectDropdown ? parseInt(elements.gradeSelectDropdown.value) : 3;
+    switchGrade(selectedGrade);
   }
 
   // 2. Load Class View Dynamically from COURSES_DATA JSON
@@ -313,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
   }
 
-  // 7. Setup View Switch Events
+  // 7. Setup View Switch Events & Grade Switching
   function setupViewSwitching() {
     elements.btnBackToCourse?.addEventListener('click', () => {
       showToast('Navigating back to Course Overview Page...', 'info');
@@ -323,6 +324,40 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.logoHeaderHome?.addEventListener('click', () => {
       showCourseOverviewPage();
     });
+
+    elements.gradeSelectDropdown?.addEventListener('change', (e) => {
+      const selectedGrade = parseInt(e.target.value);
+      switchGrade(selectedGrade);
+    });
+  }
+
+  // Switch Active Curriculum Grade & Chapter Dynamically
+  function switchGrade(gradeNumber) {
+    if (!COURSES_DATA.grades) return;
+    const targetGrade = COURSES_DATA.grades.find(g => g.gradeNumber === gradeNumber);
+    if (!targetGrade || !targetGrade.chapters.length) return;
+
+    const firstChapter = targetGrade.chapters[0];
+    COURSES_DATA.classes = firstChapter.classes;
+    COURSES_DATA.currentGradeNumber = gradeNumber;
+
+    firstChapter.classes.forEach(c => {
+      if (!state.completedStepsPerClass[c.id]) {
+        state.completedStepsPerClass[c.id] = { step1Video: false, step2TopicPdf: false, step3Website: false, step4Quiz: false, step5Task: false };
+      }
+      if (!state.unlockedClassIds.includes(c.id)) {
+        state.unlockedClassIds.push(c.id);
+      }
+    });
+
+    const activeBreadcrumb = document.getElementById('breadcrumbChapterTitle');
+    if (activeBreadcrumb) {
+      activeBreadcrumb.textContent = firstChapter.chapterTitle;
+    }
+
+    const firstClassId = firstChapter.classes[0].id;
+    loadClassView(firstClassId);
+    showToast(`Switched to ${targetGrade.gradeName} - ${firstChapter.chapterTitle}`, 'success');
   }
 
   // 8. Step Completion Actions
