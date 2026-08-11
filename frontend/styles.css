@@ -180,6 +180,24 @@ p, span, li, a {
   flex-wrap: wrap;
 }
 
+.grade-select-dropdown {
+  background: var(--bg-blue-light);
+  color: var(--primary-blue);
+  border: 1px solid var(--border-blue);
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-family: var(--font-family-heading);
+  font-weight: 700;
+  font-size: 0.825rem;
+  cursor: pointer;
+  outline: none;
+  transition: var(--transition-fast);
+}
+
+.grade-select-dropdown:hover {
+  background: var(--bg-blue-subtle);
+}
+
 .breadcrumb-separator {
   color: var(--text-light);
   font-size: 0.7rem;
