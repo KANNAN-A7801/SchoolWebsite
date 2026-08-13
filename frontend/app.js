@@ -708,6 +708,55 @@ document.addEventListener('DOMContentLoaded', () => {
       state.completedStepsPerClass[state.currentClassId].step5Task = true;
       markStepBadgeCompleted(elements.step5StatusBadge, 'Submitted');
 
+      const classData = COURSES_DATA.classes.find(c => c.id === state.currentClassId);
+      const newSubmission = {
+        id: Date.now(),
+        studentName: emailValue.split('@')[0],
+        studentEmail: emailValue,
+        gradeNumber: COURSES_DATA.currentGradeNumber,
+        dayNumber: classData ? classData.dayNumber : 1,
+        classTitle: classData ? classData.title : 'Class 1',
+        chapterTitle: `Chapter ${COURSES_DATA.currentChapterNumber}: Computer Fundamentals`,
+        topicTitle: classData ? classData.title : 'Task Submission',
+        fileName: state.selectedFile.name,
+        submittedAt: new Date().toISOString(),
+        status: 'SUBMITTED',
+        score: null,
+        teacherFeedback: ''
+      };
+
+      const storeKeyAdmin = 'lms_admin_submissions';
+      const storeKeyStudent = 'engloray_student_submissions';
+      const existingAdmin = JSON.parse(localStorage.getItem(storeKeyAdmin) || '[]');
+      const existingStudent = JSON.parse(localStorage.getItem(storeKeyStudent) || '[]');
+
+      existingAdmin.unshift(newSubmission);
+      existingStudent.unshift(newSubmission);
+
+      localStorage.setItem(storeKeyAdmin, JSON.stringify(existingAdmin));
+      localStorage.setItem(storeKeyStudent, JSON.stringify(existingStudent));
+      window.dispatchEvent(new Event('storage'));
+
+      // Post submission directly to MySQL backend server on port 8080 if available
+      try {
+        const formData = new FormData();
+        formData.append('dayClassId', state.currentClassId || 6);
+        formData.append('studentEmail', emailValue);
+        formData.append('gradeNumber', COURSES_DATA.currentGradeNumber || 5);
+        formData.append('file', state.selectedFile);
+
+        fetch('http://localhost:8080/api/v1/student/task/upload', {
+          method: 'POST',
+          body: formData
+        }).then(res => res.json()).then(data => {
+          console.log('Submission successfully saved to MySQL Database:', data);
+        }).catch(err => {
+          console.log('Saved to LocalSync store.');
+        });
+      } catch (err) {
+        // Fallback to local sync
+      }
+
       elements.submissionStatusBox.classList.remove('hidden');
       elements.submissionMetaText.innerHTML = `File: <strong>${state.selectedFile.name}</strong> • Student Email: <strong>${emailValue}</strong> • Status: SUBMITTED FOR REVIEW`;
 

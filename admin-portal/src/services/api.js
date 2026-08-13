@@ -82,7 +82,15 @@ export const apiService = {
   getSubmissions: async () => {
     try {
       const res = await apiClient.get('/admin/submissions');
-      return res.data;
+      const dbData = res.data || [];
+      const localData = getStoredSubmissions() || [];
+
+      const map = new Map();
+      if (Array.isArray(localData)) localData.forEach(s => map.set(String(s.id), s));
+      if (Array.isArray(dbData)) dbData.forEach(s => map.set(String(s.id), s));
+
+      const merged = Array.from(map.values());
+      return merged.length > 0 ? merged : localData;
     } catch (err) {
       return getStoredSubmissions();
     }
@@ -159,13 +167,31 @@ export const apiService = {
     }
   },
 
-  // Courses Module
+    // Courses Module
   getCourses: async () => {
+    const localCourses = getStoredCourses();
     try {
       const res = await apiClient.get('/admin/courses');
-      return res.data;
+      const apiCourses = res.data || [];
+      if (Array.isArray(apiCourses) && apiCourses.length > 0) {
+        // Merge API courses with local master courses to guarantee all 8 grades show full chapters
+        const map = new Map();
+        localCourses.forEach(c => map.set(c.gradeNumber, c));
+        apiCourses.forEach(c => {
+          if (c && c.gradeNumber) {
+            const existing = map.get(c.gradeNumber);
+            if (existing) {
+              map.set(c.gradeNumber, { ...existing, ...c, chapters: (c.chapters && c.chapters.length > 0) ? c.chapters : existing.chapters });
+            } else {
+              map.set(c.gradeNumber, c);
+            }
+          }
+        });
+        return Array.from(map.values());
+      }
+      return localCourses;
     } catch (err) {
-      return getStoredCourses();
+      return localCourses;
     }
   },
 
