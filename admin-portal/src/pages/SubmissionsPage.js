@@ -7,8 +7,6 @@ export const SubmissionsPage = ({ searchFilter }) => {
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [classFilter, setClassFilter] = useState('ALL');
-  const [sortField, setSortField] = useState('submittedAt');
-  const [sortOrder, setSortOrder] = useState('desc');
 
   // Modal State
   const [reviewerScore, setReviewerScore] = useState(100);
@@ -153,7 +151,7 @@ export const SubmissionsPage = ({ searchFilter }) => {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Student email</th>
+                <th>Student Email</th>
                 <th>Grade / Class</th>
                 <th>Submitted At</th>
                 <th>Status</th>
@@ -164,7 +162,7 @@ export const SubmissionsPage = ({ searchFilter }) => {
             <tbody>
               {filteredSubmissions.length === 0 ? (
                 <tr>
-                  <td colSpan="8" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
                     <i className="fa-solid fa-folder-open" style={{ fontSize: '36px', marginBottom: '10px', display: 'block' }}></i>
                     No student submissions found matching current criteria.
                   </td>
@@ -173,33 +171,28 @@ export const SubmissionsPage = ({ searchFilter }) => {
                 filteredSubmissions.map((sub) => (
                   <tr key={sub.id}>
                     <td>
-                      <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{sub.studentName}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{sub.studentEmail}</div>
+                      <div style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{sub.studentEmail}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>File: {sub.fileName}</div>
                     </td>
                     <td>
-                      <span className="badge badge-unlocked">Class {sub.gradeNumber}</span>
-                    </td>
-                    <td>
-                      <div style={{ fontWeight: '500' }}>{sub.chapterTitle}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{sub.topicTitle}</div>
+                      <span className="badge badge-unlocked">Grade {sub.gradeNumber} - Class {sub.dayNumber || 1}</span>
                     </td>
                     <td style={{ fontSize: '12px' }}>
                       {new Date(sub.submittedAt).toLocaleDateString()} • {new Date(sub.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </td>
                     <td>{getStatusBadge(sub.status)}</td>
-                    <td>
-                      {sub.score !== null && sub.score !== undefined ? (
-                        <strong style={{ color: 'var(--success)' }}>{sub.score}%</strong>
+                    <td style={{ fontSize: '12px', maxWidth: '220px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {sub.teacherFeedback ? (
+                        <span>{sub.teacherFeedback}</span>
+                      ) : sub.score !== null && sub.score !== undefined ? (
+                        <span style={{ color: 'var(--success)', fontWeight: '600' }}>Score: {sub.score}%</span>
                       ) : (
-                        <span style={{ color: 'var(--text-muted)' }}>-</span>
+                        <span style={{ color: 'var(--text-muted)' }}>No reviewer notes</span>
                       )}
-                    </td>
-                    <td style={{ fontSize: '12px', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {sub.teacherFeedback || <span style={{ color: 'var(--text-muted)' }}>No reviewer notes</span>}
                     </td>
                     <td>
                       <button className="btn btn-primary btn-sm" onClick={() => handleOpenModal(sub)}>
-                        <i className="fa-solid fa-up-right-from-square"></i> Review Modal
+                        <i className="fa-solid fa-up-right-from-square"></i> Review & Approve
                       </button>
                     </td>
                   </tr>

@@ -30,3 +30,6 @@ Thumbs.db
 *.avi
 *.mkv
 *.webm
+frontend/asset/
+*.pdf
+*.docx

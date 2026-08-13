@@ -5,4 +5,4 @@ if ($portConn) {
 }
 $libJars = (Get-ChildItem -Path "BOOT-INF/lib/*.jar").FullName -join ";"
 $cp = "target/classes;" + $libJars
-& "C:\Program Files\Eclipse Adoptium\jdk-17.0.14.7-hotspot\bin\java.exe" -cp $cp com.school.lms.LmsApplication
+java.exe -cp $cp com.school.lms.LmsApplication

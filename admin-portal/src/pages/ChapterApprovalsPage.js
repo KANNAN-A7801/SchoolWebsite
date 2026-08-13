@@ -118,20 +118,15 @@ export const ChapterApprovalsPage = () => {
                 {ch.dayClasses && ch.dayClasses.length > 0 && (
                   <div style={{ marginBottom: '16px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>Class Topics Covered ({ch.dayClasses.length} Day Classes)</span>
+                      <span style={{ color: 'var(--text-muted)', fontWeight: '600' }}>Class Topics Covered ({ch.dayClasses.length} Day Classes)</span>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      {ch.dayClasses.slice(0, 3).map((dc) => (
-                        <div key={dc.id} style={{ fontSize: '11px', color: 'var(--text-secondary)', background: 'var(--bg-subtle)', padding: '4px 8px', borderRadius: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          <i className="fa-solid fa-book-open" style={{ marginRight: '6px', color: 'var(--primary)' }}></i>
-                          {dc.topicTitle}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '180px', overflowY: 'auto', paddingRight: '4px' }}>
+                      {ch.dayClasses.map((dc) => (
+                        <div key={dc.id} style={{ fontSize: '11px', color: 'var(--text-secondary)', background: 'var(--bg-subtle)', padding: '6px 10px', borderRadius: '4px', display: 'flex', alignItems: 'center' }}>
+                          <i className="fa-solid fa-book-open" style={{ marginRight: '8px', color: 'var(--primary)', flexShrink: 0 }}></i>
+                          <span style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{dc.topicTitle}</span>
                         </div>
                       ))}
-                      {ch.dayClasses.length > 3 && (
-                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', textAlign: 'right' }}>
-                          +{ch.dayClasses.length - 3} more classes
-                        </div>
-                      )}
                     </div>
                   </div>
                 )}

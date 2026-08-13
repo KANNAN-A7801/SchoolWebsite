@@ -67,7 +67,6 @@ com\school\lms\dto\GradeDto.class
 com\school\lms\entity\Submission.class
 com\school\lms\entity\Role.class
 com\school\lms\dto\DailyReportDto.class
-com\school\lms\service\StudentService.class
 com\school\lms\repository\StudentProgressRepository.class
 com\school\lms\dto\GradeDto$GradeDtoBuilder.class
 com\school\lms\dto\DailyReportDto$DailyReportDtoBuilder.class
@@ -81,7 +80,6 @@ com\school\lms\dto\AdminDashboardStatsDto$AdminDashboardStatsDtoBuilder.class
 com\school\lms\dto\AdminStudentDto.class
 com\school\lms\dto\DayClassDto$DayClassDtoBuilder.class
 com\school\lms\dto\QuizDto$QuizQuestionDto.class
-com\school\lms\controller\StudentController.class
 com\school\lms\dto\StudentOverviewDto.class
 com\school\lms\dto\ChapterDto.class
 com\school\lms\entity\Attendance.class
