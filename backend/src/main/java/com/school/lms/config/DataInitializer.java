@@ -200,6 +200,16 @@ public class DataInitializer implements CommandLineRunner {
             userRepository.save(admin);
         }
 
+        if (!userRepository.existsByEmail("superadmin@school.com")) {
+            User superAdmin = User.builder()
+                    .email("superadmin@school.com")
+                    .password(passwordEncoder.encode("admin123"))
+                    .fullName("Super Admin User")
+                    .role(Role.ROLE_ADMIN)
+                    .build();
+            userRepository.save(superAdmin);
+        }
+
         if (!userRepository.existsByEmail("teacher@school.com")) {
             User teacher = User.builder()
                     .email("teacher@school.com")

@@ -1,5 +1,7 @@
 com\school\lms\entity\Chapter$ChapterBuilder.class
+com\school\lms\dto\AdminSubmissionDto.class
 com\school\lms\dto\SignupRequest$SignupRequestBuilder.class
+com\school\lms\dto\AdminDashboardStatsDto.class
 com\school\lms\dto\DayClassDto$Step3WebsiteDto.class
 com\school\lms\dto\QuizDto.class
 com\school\lms\dto\QuizDto$QuizOptionDto.class
@@ -14,6 +16,7 @@ com\school\lms\entity\Grade$GradeBuilder.class
 com\school\lms\dto\DayClassDto$Step3WebsiteDto$Step3WebsiteDtoBuilder.class
 com\school\lms\LmsApplication.class
 com\school\lms\repository\TermRepository.class
+com\school\lms\dto\AdminSubmissionDto$AdminSubmissionDtoBuilder.class
 com\school\lms\security\SecurityConfig.class
 com\school\lms\entity\DayClass.class
 com\school\lms\service\TeacherService.class
@@ -22,6 +25,7 @@ com\school\lms\service\AuthService.class
 com\school\lms\dto\DayClassDto$Step4QuizDto.class
 com\school\lms\dto\QuizSubmissionDto.class
 com\school\lms\dto\StepProgressDto$StepProgressDtoBuilder.class
+com\school\lms\dto\AdminCourseDto$AdminCourseDtoBuilder.class
 com\school\lms\dto\QuizDto$QuizOptionDto$QuizOptionDtoBuilder.class
 com\school\lms\entity\DayClass$DayClassBuilder.class
 com\school\lms\entity\StudentProgress.class
@@ -56,6 +60,7 @@ com\school\lms\dto\StepProgressDto.class
 com\school\lms\security\JwtUtils.class
 com\school\lms\entity\AttendanceStatus.class
 com\school\lms\repository\AttendanceRepository.class
+com\school\lms\dto\AdminStudentDto$AdminStudentDtoBuilder.class
 com\school\lms\dto\DayClassDto$Step2TopicPdfDto.class
 com\school\lms\security\CustomUserDetailsService.class
 com\school\lms\dto\GradeDto.class
@@ -72,6 +77,8 @@ com\school\lms\entity\Attendance$AttendanceBuilder.class
 com\school\lms\entity\QuizOption$QuizOptionBuilder.class
 com\school\lms\exception\GlobalExceptionHandler.class
 com\school\lms\dto\QuizDto$QuizDtoBuilder.class
+com\school\lms\dto\AdminDashboardStatsDto$AdminDashboardStatsDtoBuilder.class
+com\school\lms\dto\AdminStudentDto.class
 com\school\lms\dto\DayClassDto$DayClassDtoBuilder.class
 com\school\lms\dto\QuizDto$QuizQuestionDto.class
 com\school\lms\controller\StudentController.class
@@ -86,6 +93,7 @@ com\school\lms\repository\SubmissionRepository.class
 com\school\lms\dto\AuthResponse$AuthResponseBuilder.class
 com\school\lms\config\DataInitializer.class
 com\school\lms\entity\DailyReport.class
+com\school\lms\dto\AdminCourseDto.class
 com\school\lms\dto\AuthResponse.class
 com\school\lms\dto\SignupRequest.class
 com\school\lms\repository\UserRepository.class

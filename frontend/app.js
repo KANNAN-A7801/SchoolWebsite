@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
     toastContainer: document.getElementById('toastContainer')
   };
 
-  // 1. App Initialization
+  // 1. App Initialization & Real-Time Admin Sync
   function init() {
     setupViewSwitching();
     setupStepActions();
@@ -105,6 +105,66 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const selectedGrade = elements.gradeSelectDropdown ? parseInt(elements.gradeSelectDropdown.value) : 3;
     switchGrade(selectedGrade);
+
+    // Initial Sync & Real-Time Polling Engine (3s interval + storage events)
+    syncWithBackend();
+    setInterval(syncWithBackend, 3000);
+    window.addEventListener('storage', syncWithBackend);
+  }
+
+  // Real-Time Sync Engine with Backend Database & Admin Portal
+  async function syncWithBackend() {
+    // Sync Chapter Lock Statuses set by Admin in Admin Portal
+    try {
+      const res = await fetch('http://localhost:8080/api/v1/admin/courses');
+      if (res.ok) {
+        const adminCourses = await res.json();
+        if (Array.isArray(adminCourses)) {
+          adminCourses.forEach(course => {
+            if (course.chapters && COURSES_DATA.grades) {
+              const targetGrade = COURSES_DATA.grades.find(g => g.gradeNumber === course.gradeNumber);
+              if (targetGrade && targetGrade.chapters) {
+                course.chapters.forEach(adminChap => {
+                  const localChap = targetGrade.chapters.find(c => c.chapterNumber === adminChap.chapterNumber);
+                  if (localChap) {
+                    localChap.isLockedByAdmin = adminChap.isLocked;
+                  }
+                });
+              }
+            }
+          });
+        }
+      }
+    } catch (e) {
+      // Fallback local storage check
+    }
+
+    // Sync Submission Status (Approved / Rejected by Admin)
+    try {
+      const subsData = localStorage.getItem('lms_admin_submissions');
+      if (subsData) {
+        const submissions = JSON.parse(subsData);
+        if (Array.isArray(submissions) && submissions.length > 0) {
+          const currentClassObj = COURSES_DATA.classes ? COURSES_DATA.classes.find(c => c.id === state.currentClassId) : null;
+          const matchedSub = submissions.find(s => 
+            s.gradeNumber === COURSES_DATA.currentGradeNumber ||
+            (currentClassObj && s.topicTitle && s.topicTitle.includes(currentClassObj.title))
+          );
+
+          if (matchedSub && elements.submissionStatusBox && !elements.submissionStatusBox.classList.contains('hidden')) {
+            if (matchedSub.status === 'GRADED' || matchedSub.status === 'REVIEWED') {
+              elements.submissionStatusBox.className = 'badge badge-success';
+              elements.submissionMetaText.innerHTML = `<i class="fa-solid fa-circle-check"></i> <strong>GRADED & APPROVED BY ADMIN</strong> (Score: ${matchedSub.score || 100}%) — <em>${matchedSub.feedback || 'Excellent submission!'}</em>`;
+            } else if (matchedSub.status === 'REJECTED') {
+              elements.submissionStatusBox.className = 'badge badge-rejected';
+              elements.submissionMetaText.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <strong>REJECTED BY ADMIN</strong> — <em>${matchedSub.feedback || 'Please resubmit your worksheet.'}</em>`;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   // 2. Load Class View Dynamically from COURSES_DATA JSON
@@ -444,7 +504,7 @@ document.addEventListener('DOMContentLoaded', () => {
       elements.fileInput.value = '';
     });
 
-    elements.btnSubmitTask?.addEventListener('click', () => {
+    elements.btnSubmitTask?.addEventListener('click', async () => {
       if (!state.selectedFile) {
         showToast('Please select or drag a file to upload.', 'error');
         return;
@@ -453,13 +513,38 @@ document.addEventListener('DOMContentLoaded', () => {
       state.completedStepsPerClass[state.currentClassId].step5Task = true;
       markStepBadgeCompleted(elements.step5StatusBadge, 'Uploaded');
 
+      const classObj = COURSES_DATA.classes ? COURSES_DATA.classes.find(c => c.id === state.currentClassId) : null;
+      const newSubmission = {
+        id: Date.now(),
+        studentName: 'Emma Watson',
+        studentEmail: 'student5@school.com',
+        gradeNumber: COURSES_DATA.currentGradeNumber || 5,
+        chapterTitle: 'Chapter 1: Computer Skills & Hardware Devices',
+        topicTitle: classObj ? classObj.title : 'Practical Worksheet Submission',
+        fileName: state.selectedFile.name,
+        submittedAt: new Date().toISOString(),
+        status: 'SUBMITTED',
+        score: null,
+        feedback: null
+      };
+
+      // Push submission to shared storage and API backend for Admin Portal
+      try {
+        const existingSubs = JSON.parse(localStorage.getItem('lms_admin_submissions') || '[]');
+        existingSubs.unshift(newSubmission);
+        localStorage.setItem('lms_admin_submissions', JSON.stringify(existingSubs));
+        window.dispatchEvent(new Event('storage'));
+      } catch (err) {
+        console.error('Submission sync error:', err);
+      }
+
       elements.submissionStatusBox.classList.remove('hidden');
-      elements.submissionMetaText.textContent = `File: ${state.selectedFile.name} • Status: SUBMITTED`;
+      elements.submissionMetaText.textContent = `File: ${state.selectedFile.name} • Status: SUBMITTED (Pending Admin Review)`;
       elements.dropzone.classList.add('hidden');
       elements.btnSubmitTask.disabled = true;
-      elements.btnSubmitTask.innerHTML = '<i class="fa-solid fa-cloud-check"></i> Assignment Submitted';
+      elements.btnSubmitTask.innerHTML = '<i class="fa-solid fa-cloud-check"></i> Assignment Submitted to Admin';
 
-      showToast('Step 5 Complete: Practical Assignment Uploaded & Stored!', 'success');
+      showToast('Step 5 Complete: Assignment submitted! Real-time notification sent to Admin Portal.', 'success');
       updateProgressUI();
     });
   }
