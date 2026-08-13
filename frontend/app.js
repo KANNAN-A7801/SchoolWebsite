@@ -1,20 +1,16 @@
 /* ==========================================================================
-   ENGLORAY LEARNING - DYNAMIC JSON NAVIGATION ENGINE & APPLICATION LOGIC
+   ENGLORAY LEARNING - DYNAMIC JSON NAVIGATION ENGINE & URL ROUTER
    Loads class data from COURSES_DATA JSON object dynamically
+   Supports clean URL routing: /grade-3/chapter-1/class-1, /grade-5/chapter-1/overview, etc.
    ========================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
   // LMS Application State
   const state = {
-    currentClassId: 6, // Default Class 1 ID
+    currentClassId: 6, // Default Class ID
     currentView: 'learning', // 'learning' or 'overview'
-    completedStepsPerClass: {
-      6: { step1Video: false, step2TopicPdf: false, step3Website: false, step4Quiz: false, step5Task: false },
-      7: { step1Video: false, step2TopicPdf: false, step3Website: false, step4Quiz: false, step5Task: false },
-      8: { step1Video: false, step2TopicPdf: false, step3Website: false, step4Quiz: false, step5Task: false },
-      9: { step1Video: false, step2TopicPdf: false, step3Website: false, step4Quiz: false, step5Task: false }
-    },
-    unlockedClassIds: [6, 7], // Class 1 and Class 2 unlocked by default/admin
+    completedStepsPerClass: {},
+    unlockedClassIds: [6, 7, 301, 401, 601, 701, 801, 901, 1001], // Class 1 unlocked across all grades
     selectedQuizOptionId: null,
     selectedFile: null
   };
@@ -63,8 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Step 4 Quiz
     step4Title: document.getElementById('step4Title'),
     step4Desc: document.getElementById('step4Desc'),
-    quizQuestionText: document.getElementById('quizQuestionText'),
-    quizOptionsContainer: document.getElementById('quizOptionsContainer'),
+    quizQuestionsContainer: document.getElementById('quizQuestionsContainer'),
+    studentEmailInput: document.getElementById('studentEmailInput'),
     btnSubmitQuiz: document.getElementById('btnSubmitQuiz'),
     quizResultBox: document.getElementById('quizResultBox'),
     resultTitle: document.getElementById('resultTitle'),
@@ -97,14 +93,127 @@ document.addEventListener('DOMContentLoaded', () => {
     toastContainer: document.getElementById('toastContainer')
   };
 
+  // Ensure Class 1 is Unlocked for ALL Grades by Default
+  function ensureClass1UnlockedForAllGrades() {
+    if (!COURSES_DATA || !COURSES_DATA.grades) return;
+    COURSES_DATA.grades.forEach(grade => {
+      if (grade.chapters && grade.chapters[0] && grade.chapters[0].classes) {
+        grade.chapters[0].classes.forEach(c => {
+          if (!state.completedStepsPerClass[c.id]) {
+            state.completedStepsPerClass[c.id] = { step1Video: false, step2TopicPdf: false, step3Website: false, step4Quiz: false, step5Task: false };
+          }
+          if (c.dayNumber === 1 || c.isUnlockedByAdmin) {
+            if (!state.unlockedClassIds.includes(c.id)) {
+              state.unlockedClassIds.push(c.id);
+            }
+          }
+        });
+      }
+    });
+  }
+
+  // URL Route Management (pushState / replaceState / popstate)
+  function getRouteInfo() {
+    let path = window.location.pathname;
+    if (window.location.hash && window.location.hash.startsWith('#/')) {
+      path = window.location.hash.replace('#', '');
+    }
+
+    const routeRegex = /^\/grade-(\d+)(?:\/chapter-(\d+))?(?:\/(class-(\d+)|overview))?/i;
+    const match = path.match(routeRegex);
+
+    if (match) {
+      return {
+        gradeNum: parseInt(match[1]),
+        chapterNum: match[2] ? parseInt(match[2]) : 1,
+        isOverview: match[3] === 'overview',
+        classDayNum: match[4] ? parseInt(match[4]) : 1
+      };
+    }
+    return null;
+  }
+
+  function updateURLRoute(gradeNum, chapterNum, classDayNum, isOverview, replace = false) {
+    const chapNum = chapterNum || 1;
+    let path = `/grade-${gradeNum}/chapter-${chapNum}`;
+    if (isOverview) {
+      path += `/overview`;
+    } else {
+      path += `/class-${classDayNum || 1}`;
+    }
+
+    if (window.location.pathname !== path) {
+      const stateObj = { gradeNum, chapterNum: chapNum, classDayNum, isOverview };
+      if (replace) {
+        window.history.replaceState(stateObj, '', path);
+      } else {
+        window.history.pushState(stateObj, '', path);
+      }
+    }
+  }
+
+  function handleCurrentRoute() {
+    ensureClass1UnlockedForAllGrades();
+    const route = getRouteInfo();
+
+    let targetGradeNum = 3;
+    let targetChapterNum = 1;
+    let targetDayNum = 1;
+    let isOverview = false;
+
+    if (route) {
+      targetGradeNum = route.gradeNum;
+      targetChapterNum = route.chapterNum;
+      targetDayNum = route.classDayNum;
+      isOverview = route.isOverview;
+    } else if (elements.gradeSelectDropdown) {
+      targetGradeNum = parseInt(elements.gradeSelectDropdown.value) || 3;
+    }
+
+    let targetGrade = COURSES_DATA.grades ? COURSES_DATA.grades.find(g => g.gradeNumber === targetGradeNum) : null;
+    if (!targetGrade && COURSES_DATA.grades && COURSES_DATA.grades.length > 0) {
+      targetGrade = COURSES_DATA.grades[0];
+      targetGradeNum = targetGrade.gradeNumber;
+    }
+
+    if (targetGrade && targetGrade.chapters && targetGrade.chapters.length > 0) {
+      const firstChapter = targetGrade.chapters[0];
+      COURSES_DATA.classes = firstChapter.classes;
+      COURSES_DATA.currentGradeNumber = targetGradeNum;
+
+      if (elements.gradeSelectDropdown) {
+        elements.gradeSelectDropdown.value = targetGradeNum.toString();
+      }
+
+      const activeBreadcrumb = document.getElementById('breadcrumbChapterTitle');
+      if (activeBreadcrumb) {
+        activeBreadcrumb.textContent = firstChapter.chapterTitle;
+      }
+
+      if (isOverview) {
+        showCourseOverviewPage(false);
+      } else {
+        const targetClass = firstChapter.classes.find(c => c.dayNumber === targetDayNum) || firstChapter.classes[0];
+        loadClassView(targetClass.id, false);
+      }
+
+      updateURLRoute(targetGradeNum, targetChapterNum, isOverview ? 1 : targetDayNum, isOverview, true);
+    }
+  }
+
   // 1. App Initialization & Real-Time Admin Sync
   function init() {
     setupViewSwitching();
     setupStepActions();
     setupFileUpload();
 
-    const selectedGrade = elements.gradeSelectDropdown ? parseInt(elements.gradeSelectDropdown.value) : 3;
-    switchGrade(selectedGrade);
+    // Listen for browser Back / Forward navigation
+    window.addEventListener('popstate', () => {
+      handleCurrentRoute();
+    });
+
+    // Handle initial route parsing
+    handleCurrentRoute();
 
     // Initial Sync & Real-Time Polling Engine (3s interval + storage events)
     syncWithBackend();
@@ -114,7 +223,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Real-Time Sync Engine with Backend Database & Admin Portal
   async function syncWithBackend() {
-    // Sync Chapter Lock Statuses set by Admin in Admin Portal
     try {
       const res = await fetch('http://localhost:8080/api/v1/admin/courses');
       if (res.ok) {
@@ -139,7 +247,6 @@ document.addEventListener('DOMContentLoaded', () => {
       // Fallback local storage check
     }
 
-    // Sync Submission Status (Approved / Rejected by Admin)
     try {
       const subsData = localStorage.getItem('lms_admin_submissions');
       if (subsData) {
@@ -168,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 2. Load Class View Dynamically from COURSES_DATA JSON
-  function loadClassView(classId) {
+  function loadClassView(classId, updateHistory = true) {
     const classData = COURSES_DATA.classes.find(c => c.id === classId);
     if (!classData) return;
 
@@ -205,8 +312,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Step 4: Quiz
     elements.step4Title.textContent = classData.steps.step4Quiz.title;
     elements.step4Desc.innerHTML = `Test your knowledge. Passing score is <strong>${classData.steps.step4Quiz.passingScorePercent}%</strong>.`;
-    elements.quizQuestionText.textContent = classData.steps.step4Quiz.question;
-    renderQuizOptions(classData.steps.step4Quiz.options);
+    const quizList = (classData.steps.step4Quiz.questions && classData.steps.step4Quiz.questions.length > 0)
+      ? classData.steps.step4Quiz.questions
+      : (classData.steps.step4Quiz.question ? [{ id: 1, question: classData.steps.step4Quiz.question, options: classData.steps.step4Quiz.options }] : []);
+    renderQuizQuestions(quizList);
 
     // Step 5: Practical Task
     elements.step5Title.textContent = classData.steps.step5Task.title;
@@ -226,37 +335,61 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.courseOverviewPage.classList.add('hidden');
     elements.classLearningPage.classList.remove('hidden');
 
+    // Update URL Route
+    if (updateHistory) {
+      updateURLRoute(COURSES_DATA.currentGradeNumber, 1, classData.dayNumber, false);
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // 3. Render Quiz Options Dynamically
-  function renderQuizOptions(options) {
-    state.selectedQuizOptionId = null;
-    elements.quizOptionsContainer.innerHTML = options.map(opt => `
-      <label class="option-pill" data-option-id="${opt.id}" data-correct="${opt.isCorrect}">
-        <input type="radio" name="quizOption" value="${opt.id}">
-        <span class="radio-custom"></span>
-        <span class="option-label">${opt.text}</span>
-      </label>
+  // 3. Render 5 Quiz Questions Dynamically per Class
+  function renderQuizQuestions(questions) {
+    state.selectedQuizAnswers = {};
+    if (!elements.quizQuestionsContainer) return;
+
+    if (!Array.isArray(questions) || questions.length === 0) {
+      elements.quizQuestionsContainer.innerHTML = `<p class="text-muted">No quiz questions available for this class.</p>`;
+      return;
+    }
+
+    elements.quizQuestionsContainer.innerHTML = questions.map((q, qIdx) => `
+      <div class="quiz-question-card" id="quizQuestionCard_${qIdx}">
+        <span class="question-num"><i class="fa-solid fa-circle-question"></i> Question ${qIdx + 1} of ${questions.length}</span>
+        <h4 class="question-text">${q.question}</h4>
+        <div class="quiz-options-group">
+          ${q.options.map(opt => `
+            <label class="option-pill" data-q-index="${qIdx}" data-option-id="${opt.id}">
+              <input type="radio" name="quiz_q_${qIdx}" value="${opt.id}">
+              <span class="radio-custom"></span>
+              <span class="option-label">${opt.text}</span>
+            </label>
+          `).join('')}
+        </div>
+      </div>
     `).join('');
 
-    // Attach option pill selection click event
-    const pills = elements.quizOptionsContainer.querySelectorAll('.option-pill');
-    pills.forEach(pill => {
-      pill.addEventListener('click', () => {
-        pills.forEach(p => p.classList.remove('selected'));
-        pill.classList.add('selected');
-        const radio = pill.querySelector('input[type="radio"]');
-        if (radio) {
-          radio.checked = true;
-          state.selectedQuizOptionId = parseInt(radio.value);
-        }
+    // Attach option pill selection listeners per question
+    const cards = elements.quizQuestionsContainer.querySelectorAll('.quiz-question-card');
+    cards.forEach((card, qIdx) => {
+      const pills = card.querySelectorAll('.option-pill');
+      pills.forEach(pill => {
+        pill.addEventListener('click', () => {
+          pills.forEach(p => p.classList.remove('selected'));
+          pill.classList.add('selected');
+          const radio = pill.querySelector('input[type="radio"]');
+          if (radio) {
+            radio.checked = true;
+            state.selectedQuizAnswers[qIdx] = parseInt(radio.value);
+            card.classList.remove('unanswered-warning');
+          }
+        });
       });
     });
   }
 
   // 4. Render Course Overview Page (Grid of All Classes)
-  function showCourseOverviewPage() {
+  function showCourseOverviewPage(updateHistory = true) {
     state.currentView = 'overview';
     elements.classLearningPage.classList.add('hidden');
     elements.courseOverviewPage.classList.remove('hidden');
@@ -295,7 +428,6 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
     }).join('');
 
-    // Attach click events to "Open Class Page" buttons
     const openBtns = elements.courseClassesGrid.querySelectorAll('.btn-open-class');
     openBtns.forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -303,6 +435,10 @@ document.addEventListener('DOMContentLoaded', () => {
         loadClassView(classId);
       });
     });
+
+    if (updateHistory) {
+      updateURLRoute(COURSES_DATA.currentGradeNumber, 1, 1, true);
+    }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -337,7 +473,6 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
     }).join('');
 
-    // Sidebar navigation click handlers
     const navItems = elements.sidebarClassNavList.querySelectorAll('.class-nav-item');
     navItems.forEach(item => {
       item.addEventListener('click', () => {
@@ -345,7 +480,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isUnlocked = state.unlockedClassIds.includes(classId);
 
         if (!isUnlocked) {
-          showToast(`ACCESS_DENIED: Class ${classId - 5} is locked by Admin / Teacher!`, 'error');
+          showToast(`ACCESS_DENIED: Class is locked by Admin / Teacher!`, 'error');
         } else {
           loadClassView(classId);
         }
@@ -392,7 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Switch Active Curriculum Grade & Chapter Dynamically
-  function switchGrade(gradeNumber) {
+  function switchGrade(gradeNumber, updateHistory = true) {
     if (!COURSES_DATA.grades) return;
     const targetGrade = COURSES_DATA.grades.find(g => g.gradeNumber === gradeNumber);
     if (!targetGrade || !targetGrade.chapters.length) return;
@@ -401,14 +536,11 @@ document.addEventListener('DOMContentLoaded', () => {
     COURSES_DATA.classes = firstChapter.classes;
     COURSES_DATA.currentGradeNumber = gradeNumber;
 
-    firstChapter.classes.forEach(c => {
-      if (!state.completedStepsPerClass[c.id]) {
-        state.completedStepsPerClass[c.id] = { step1Video: false, step2TopicPdf: false, step3Website: false, step4Quiz: false, step5Task: false };
-      }
-      if (!state.unlockedClassIds.includes(c.id)) {
-        state.unlockedClassIds.push(c.id);
-      }
-    });
+    ensureClass1UnlockedForAllGrades();
+
+    if (elements.gradeSelectDropdown) {
+      elements.gradeSelectDropdown.value = gradeNumber.toString();
+    }
 
     const activeBreadcrumb = document.getElementById('breadcrumbChapterTitle');
     if (activeBreadcrumb) {
@@ -416,7 +548,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const firstClassId = firstChapter.classes[0].id;
-    loadClassView(firstClassId);
+    loadClassView(firstClassId, updateHistory);
     showToast(`Switched to ${targetGrade.gradeName} - ${firstChapter.chapterTitle}`, 'success');
   }
 
@@ -451,37 +583,79 @@ document.addEventListener('DOMContentLoaded', () => {
       elements.btnCompleteStep3.classList.remove('btn-primary');
       elements.btnCompleteStep3.classList.add('btn-outline');
       elements.btnCompleteStep3.innerHTML = '<i class="fa-solid fa-check-double"></i> Step 3 Completed';
-      showToast('Step 3 Complete: Learning Activity Finished!', 'success');
+      showToast('Step 3 Complete: Interactive Website Activity!', 'success');
       updateProgressUI();
     });
 
-    // Step 4 Quiz Submission
+    // Step 4 Quiz Submission (Mandatory 5 Questions)
     elements.btnSubmitQuiz?.addEventListener('click', () => {
-      if (!state.selectedQuizOptionId) {
-        showToast('Please select an option before submitting the quiz.', 'error');
+      const classData = COURSES_DATA.classes.find(c => c.id === state.currentClassId);
+      const questions = classData?.steps?.step4Quiz?.questions || [];
+
+      if (questions.length === 0) return;
+
+      // Check if all 5 questions are answered
+      const answeredIndices = Object.keys(state.selectedQuizAnswers || {}).map(k => parseInt(k));
+      let unansweredCount = 0;
+
+      questions.forEach((q, idx) => {
+        const card = document.getElementById(`quizQuestionCard_${idx}`);
+        if (!answeredIndices.includes(idx)) {
+          unansweredCount++;
+          if (card) card.classList.add('unanswered-warning');
+        } else {
+          if (card) card.classList.remove('unanswered-warning');
+        }
+      });
+
+      if (unansweredCount > 0) {
+        showToast(`MANDATORY: Please answer ALL ${questions.length} quiz questions before submitting! (${unansweredCount} remaining)`, 'error');
         return;
       }
 
-      state.completedStepsPerClass[state.currentClassId].step4Quiz = true;
-      elements.quizResultBox.classList.remove('hidden');
-      elements.resultTitle.textContent = 'Quiz Submitted! (100%)';
-      elements.resultSubtitle.textContent = 'Great job answering the concept check question!';
-      markStepBadgeCompleted(elements.step4StatusBadge, 'Passed (100%)');
-      elements.btnSubmitQuiz.disabled = true;
-      elements.btnSubmitQuiz.innerHTML = '<i class="fa-solid fa-check-double"></i> Quiz Submitted';
+      // Calculate score out of 5
+      let correctCount = 0;
+      questions.forEach((q, idx) => {
+        const selectedOptId = state.selectedQuizAnswers[idx];
+        const selectedOpt = q.options.find(o => o.id === selectedOptId);
+        if (selectedOpt && selectedOpt.isCorrect) {
+          correctCount++;
+        }
+      });
 
-      showToast('Step 4 Complete: Quiz Answers Submitted!', 'success');
+      const scorePercent = Math.round((correctCount / questions.length) * 100);
+      const passingPercent = classData.steps.step4Quiz.passingScorePercent || 80;
+
+      const banner = document.getElementById('resultAlertBanner');
+      elements.quizResultBox.classList.remove('hidden');
+
+      if (scorePercent >= passingPercent) {
+        state.completedStepsPerClass[state.currentClassId].step4Quiz = true;
+        if (banner) banner.className = 'result-alert';
+        elements.resultTitle.innerHTML = `<i class="fa-solid fa-trophy text-success"></i> Quiz Passed! Score: ${scorePercent}% (${correctCount}/${questions.length} Correct)`;
+        elements.resultSubtitle.textContent = `Great job! You met the passing criteria of ${passingPercent}%.`;
+        markStepBadgeCompleted(elements.step4StatusBadge, `Passed ${scorePercent}%`);
+        showToast(`Step 4 Passed: ${scorePercent}% Score!`, 'success');
+      } else {
+        if (banner) banner.className = 'result-alert result-danger';
+        elements.resultTitle.innerHTML = `<i class="fa-solid fa-circle-xmark text-danger"></i> Quiz Attempt Failed (${scorePercent}%)`;
+        elements.resultSubtitle.textContent = `You scored ${correctCount}/${questions.length} (${scorePercent}%). Passing score is ${passingPercent}%. Please review Step 2 PDF and try again!`;
+        showToast(`Quiz Failed (${scorePercent}%). Review topic and retry!`, 'error');
+      }
+
       updateProgressUI();
     });
   }
 
-  // 9. File Upload Handlers
+  // 9. File Upload Handling & Step 5 Submission
   function setupFileUpload() {
-    elements.btnBrowseFile?.addEventListener('click', () => elements.fileInput.click());
+    elements.btnBrowseFile?.addEventListener('click', () => {
+      elements.fileInput.click();
+    });
 
     elements.fileInput?.addEventListener('change', (e) => {
       if (e.target.files.length > 0) {
-        handleSelectedFile(e.target.files[0]);
+        handleFileSelected(e.target.files[0]);
       }
     });
 
@@ -490,178 +664,213 @@ document.addEventListener('DOMContentLoaded', () => {
       elements.dropzone.classList.add('dragover');
     });
 
-    elements.dropzone?.addEventListener('dragleave', () => elements.dropzone.classList.remove('dragover'));
+    elements.dropzone?.addEventListener('dragleave', () => {
+      elements.dropzone.classList.remove('dragover');
+    });
 
     elements.dropzone?.addEventListener('drop', (e) => {
       e.preventDefault();
       elements.dropzone.classList.remove('dragover');
-      if (e.dataTransfer.files.length > 0) handleSelectedFile(e.dataTransfer.files[0]);
+      if (e.dataTransfer.files.length > 0) {
+        handleFileSelected(e.dataTransfer.files[0]);
+      }
     });
 
     elements.btnClearFile?.addEventListener('click', () => {
       state.selectedFile = null;
-      elements.selectedFileInfo.classList.add('hidden');
       elements.fileInput.value = '';
+      elements.selectedFileInfo.classList.add('hidden');
     });
 
-    elements.btnSubmitTask?.addEventListener('click', async () => {
+    elements.btnSubmitTask?.addEventListener('click', () => {
+      const emailInput = elements.studentEmailInput;
+      const emailValue = emailInput ? emailInput.value.trim() : '';
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      if (!emailValue || !emailRegex.test(emailValue)) {
+        if (emailInput) {
+          emailInput.classList.add('input-error');
+          emailInput.focus();
+        }
+        showToast('MANDATORY EMAIL REQUIRED: Please enter a valid student email ID before submitting!', 'error');
+        return;
+      }
+
+      if (emailInput) {
+        emailInput.classList.remove('input-error');
+      }
+
       if (!state.selectedFile) {
-        showToast('Please select or drag a file to upload.', 'error');
+        showToast('Please select or drag a worksheet file to upload before submitting task!', 'error');
         return;
       }
 
       state.completedStepsPerClass[state.currentClassId].step5Task = true;
-      markStepBadgeCompleted(elements.step5StatusBadge, 'Uploaded');
-
-      const classObj = COURSES_DATA.classes ? COURSES_DATA.classes.find(c => c.id === state.currentClassId) : null;
-      const newSubmission = {
-        id: Date.now(),
-        studentName: 'Emma Watson',
-        studentEmail: 'student5@school.com',
-        gradeNumber: COURSES_DATA.currentGradeNumber || 5,
-        chapterTitle: 'Chapter 1: Computer Skills & Hardware Devices',
-        topicTitle: classObj ? classObj.title : 'Practical Worksheet Submission',
-        fileName: state.selectedFile.name,
-        submittedAt: new Date().toISOString(),
-        status: 'SUBMITTED',
-        score: null,
-        feedback: null
-      };
-
-      // Push submission to shared storage and API backend for Admin Portal
-      try {
-        const existingSubs = JSON.parse(localStorage.getItem('lms_admin_submissions') || '[]');
-        existingSubs.unshift(newSubmission);
-        localStorage.setItem('lms_admin_submissions', JSON.stringify(existingSubs));
-        window.dispatchEvent(new Event('storage'));
-      } catch (err) {
-        console.error('Submission sync error:', err);
-      }
+      markStepBadgeCompleted(elements.step5StatusBadge, 'Submitted');
 
       elements.submissionStatusBox.classList.remove('hidden');
-      elements.submissionMetaText.textContent = `File: ${state.selectedFile.name} • Status: SUBMITTED (Pending Admin Review)`;
-      elements.dropzone.classList.add('hidden');
-      elements.btnSubmitTask.disabled = true;
-      elements.btnSubmitTask.innerHTML = '<i class="fa-solid fa-cloud-check"></i> Assignment Submitted to Admin';
+      elements.submissionMetaText.innerHTML = `File: <strong>${state.selectedFile.name}</strong> • Student Email: <strong>${emailValue}</strong> • Status: SUBMITTED FOR REVIEW`;
 
-      showToast('Step 5 Complete: Assignment submitted! Real-time notification sent to Admin Portal.', 'success');
+      showToast(`Step 5 Task Submitted Successfully for ${emailValue}!`, 'success');
       updateProgressUI();
     });
   }
 
-  function handleSelectedFile(file) {
+  function handleFileSelected(file) {
     state.selectedFile = file;
     elements.fileNameDisplay.textContent = file.name;
     elements.selectedFileInfo.classList.remove('hidden');
+    showToast(`File selected: ${file.name}`, 'info');
   }
 
-  // 10. UI State Restoration for a given class ID
-  function restoreClassStepUIState(classId) {
-    const classSteps = state.completedStepsPerClass[classId];
-
-    // Reset Quiz result box & Dropzone UI
-    elements.quizResultBox.classList.add('hidden');
-    elements.btnSubmitQuiz.disabled = false;
-    elements.btnSubmitQuiz.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit Quiz Answers';
-
-    elements.dropzone.classList.remove('hidden');
-    elements.submissionStatusBox.classList.add('hidden');
-    elements.btnSubmitTask.disabled = false;
-    elements.btnSubmitTask.innerHTML = '<i class="fa-solid fa-upload"></i> Upload & Submit Assignment';
-    state.selectedFile = null;
-    elements.selectedFileInfo.classList.add('hidden');
-
-    // Reset Buttons
-    elements.btnCompleteStep1.className = 'btn btn-primary';
-    elements.btnCompleteStep1.innerHTML = '<i class="fa-solid fa-circle-check"></i> Mark Video as Watched';
-
-    elements.btnCompleteStep2.className = 'btn btn-primary';
-    elements.btnCompleteStep2.innerHTML = '<i class="fa-solid fa-book-open-reader"></i> Confirm Topic Reviewed';
-
-    elements.btnCompleteStep3.className = 'btn btn-primary';
-    elements.btnCompleteStep3.innerHTML = '<i class="fa-solid fa-square-check"></i> Mark Activity Complete';
-
-    // Step Badges
-    resetStepBadge(elements.step1StatusBadge, classSteps.step1Video ? 'Watched' : null);
-    resetStepBadge(elements.step2StatusBadge, classSteps.step2TopicPdf ? 'Reviewed' : null);
-    resetStepBadge(elements.step3StatusBadge, classSteps.step3Website ? 'Visited' : null);
-    resetStepBadge(elements.step4StatusBadge, classSteps.step4Quiz ? 'Submitted' : null);
-    resetStepBadge(elements.step5StatusBadge, classSteps.step5Task ? 'Uploaded' : null);
+  // 10. Class & Step Progress Calculations
+  function isClass100PercentCompleted(classId) {
+    const classProgress = state.completedStepsPerClass[classId];
+    if (!classProgress) return false;
+    return (
+      classProgress.step1Video &&
+      classProgress.step2TopicPdf &&
+      classProgress.step3Website &&
+      classProgress.step4Quiz &&
+      classProgress.step5Task
+    );
   }
 
-  function resetStepBadge(badgeEl, completedLabel) {
-    if (!badgeEl) return;
-    if (completedLabel) {
-      badgeEl.innerHTML = `<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> ${completedLabel}</span>`;
-    } else {
-      badgeEl.innerHTML = `<span class="badge badge-neutral"><i class="fa-regular fa-circle"></i> Pending</span>`;
-    }
-  }
-
-  // 11. Progress Ring UI Update & Progression Engine
   function updateProgressUI() {
-    const currentSteps = state.completedStepsPerClass[state.currentClassId];
-    const completedCount = Object.values(currentSteps).filter(Boolean).length;
-    const percentage = Math.round((completedCount / 5) * 100);
+    const currentClassProgress = state.completedStepsPerClass[state.currentClassId] || {
+      step1Video: false, step2TopicPdf: false, step3Website: false, step4Quiz: false, step5Task: false
+    };
 
-    elements.progressPercentageText.textContent = `${percentage}%`;
-    const circleDashOffset = 251.2 - (251.2 * (percentage / 100));
-    elements.progressRingFill.style.strokeDashoffset = circleDashOffset;
+    let completedCount = 0;
+    if (currentClassProgress.step1Video) completedCount++;
+    if (currentClassProgress.step2TopicPdf) completedCount++;
+    if (currentClassProgress.step3Website) completedCount++;
+    if (currentClassProgress.step4Quiz) completedCount++;
+    if (currentClassProgress.step5Task) completedCount++;
 
-    const classObj = COURSES_DATA.classes.find(c => c.id === state.currentClassId);
-    const dayNum = classObj ? classObj.dayNumber : 1;
+    const percent = (completedCount / 5) * 100;
+    elements.progressPercentageText.textContent = `${Math.round(percent)}%`;
 
-    if (percentage === 100) {
-      elements.overallCompletionBadge.className = 'badge badge-success';
-      elements.overallCompletionBadge.innerHTML = `<i class="fa-solid fa-circle-check"></i> Class ${dayNum} Fully Completed!`;
-      elements.progressionStatusTitle.textContent = `Class ${dayNum} Completed!`;
-      elements.progressionSubtitleText.textContent = `🎉 All 5 steps completed!`;
+    const circumference = 2 * Math.PI * 40; // r=40
+    const offset = circumference - (percent / 100) * circumference;
+    elements.progressRingFill.style.strokeDasharray = `${circumference}`;
+    elements.progressRingFill.style.strokeDashoffset = `${offset}`;
 
-      // Auto-unlock next class if completed
-      const nextClassId = state.currentClassId + 1;
-      if (!state.unlockedClassIds.includes(nextClassId) && COURSES_DATA.classes.some(c => c.id === nextClassId)) {
-        state.unlockedClassIds.push(nextClassId);
-        showToast(`🎉 Class ${dayNum + 1} has been UNLOCKED!`, 'success');
+    const currentClassObj = COURSES_DATA.classes.find(c => c.id === state.currentClassId);
+    const dayNum = currentClassObj ? currentClassObj.dayNumber : 1;
+
+    if (percent === 100) {
+      elements.progressionStatusTitle.innerHTML = `<i class="fa-solid fa-circle-check text-success"></i> Class ${dayNum} Completed!`;
+      elements.progressionSubtitleText.textContent = `All 5 steps finished. Next class is ready!`;
+
+      // Automatically unlock next class if available
+      const nextClass = COURSES_DATA.classes.find(c => c.dayNumber === dayNum + 1);
+      if (nextClass && !state.unlockedClassIds.includes(nextClass.id)) {
+        state.unlockedClassIds.push(nextClass.id);
+        showToast(`Congratulations! Class ${nextClass.dayNumber} has been UNLOCKED!`, 'success');
+        renderSidebarClassList();
       }
     } else {
-      elements.overallCompletionBadge.className = 'badge badge-primary';
-      elements.overallCompletionBadge.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> In Progress (${completedCount}/5 Steps)`;
       elements.progressionStatusTitle.textContent = `Class ${dayNum} In Progress`;
-      elements.progressionSubtitleText.textContent = `Complete all 5 steps of Class ${dayNum}.`;
+      elements.progressionSubtitleText.textContent = `${completedCount} of 5 steps completed.`;
     }
 
     renderSidebarClassList();
   }
 
-  function isClass100PercentCompleted(classId) {
-    const steps = state.completedStepsPerClass[classId];
-    if (!steps) return false;
-    return Object.values(steps).filter(Boolean).length === 5;
-  }
+  function restoreClassStepUIState(classId) {
+    const p = state.completedStepsPerClass[classId] || {
+      step1Video: false, step2TopicPdf: false, step3Website: false, step4Quiz: false, step5Task: false
+    };
 
-  function markStepBadgeCompleted(badgeElement, labelText) {
-    if (badgeElement) {
-      badgeElement.innerHTML = `<span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> ${labelText}</span>`;
+    // Step 1
+    if (p.step1Video) {
+      markStepBadgeCompleted(elements.step1StatusBadge, 'Watched');
+      elements.btnCompleteStep1.classList.remove('btn-primary');
+      elements.btnCompleteStep1.classList.add('btn-outline');
+      elements.btnCompleteStep1.innerHTML = '<i class="fa-solid fa-check-double"></i> Step 1 Completed';
+    } else {
+      resetStepBadge(elements.step1StatusBadge, 'Step 1');
+      elements.btnCompleteStep1.className = 'btn btn-primary btn-md';
+      elements.btnCompleteStep1.innerHTML = '<i class="fa-solid fa-circle-check"></i> Mark Video as Completed';
+    }
+
+    // Step 2
+    if (p.step2TopicPdf) {
+      markStepBadgeCompleted(elements.step2StatusBadge, 'Reviewed');
+      elements.btnCompleteStep2.classList.remove('btn-primary');
+      elements.btnCompleteStep2.classList.add('btn-outline');
+      elements.btnCompleteStep2.innerHTML = '<i class="fa-solid fa-check-double"></i> Step 2 Completed';
+    } else {
+      resetStepBadge(elements.step2StatusBadge, 'Step 2');
+      elements.btnCompleteStep2.className = 'btn btn-primary btn-md';
+      elements.btnCompleteStep2.innerHTML = '<i class="fa-solid fa-circle-check"></i> Mark Topic PDF as Read';
+    }
+
+    // Step 3
+    if (p.step3Website) {
+      markStepBadgeCompleted(elements.step3StatusBadge, 'Visited');
+      elements.btnCompleteStep3.classList.remove('btn-primary');
+      elements.btnCompleteStep3.classList.add('btn-outline');
+      elements.btnCompleteStep3.innerHTML = '<i class="fa-solid fa-check-double"></i> Step 3 Completed';
+    } else {
+      resetStepBadge(elements.step3StatusBadge, 'Step 3');
+      elements.btnCompleteStep3.className = 'btn btn-primary btn-md';
+      elements.btnCompleteStep3.innerHTML = '<i class="fa-solid fa-circle-check"></i> Mark Activity Completed';
+    }
+
+    // Step 4 Quiz
+    if (p.step4Quiz) {
+      markStepBadgeCompleted(elements.step4StatusBadge, 'Passed 100%');
+      elements.quizResultBox.classList.remove('hidden', 'result-danger');
+      elements.quizResultBox.classList.add('result-success');
+      elements.resultTitle.innerHTML = '<i class="fa-solid fa-circle-check text-success"></i> Quiz Passed (100%)';
+      elements.resultSubtitle.textContent = 'You have already passed this concept check quiz.';
+    } else {
+      resetStepBadge(elements.step4StatusBadge, 'Step 4');
+      elements.quizResultBox.classList.add('hidden');
+    }
+
+    // Step 5 Task
+    if (p.step5Task) {
+      markStepBadgeCompleted(elements.step5StatusBadge, 'Submitted');
+      elements.submissionStatusBox.classList.remove('hidden');
+    } else {
+      resetStepBadge(elements.step5StatusBadge, 'Step 5');
+      elements.submissionStatusBox.classList.add('hidden');
     }
   }
 
+  function markStepBadgeCompleted(badgeElement, text) {
+    if (!badgeElement) return;
+    badgeElement.className = 'badge badge-success';
+    badgeElement.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${text}`;
+  }
+
+  function resetStepBadge(badgeElement, defaultText) {
+    if (!badgeElement) return;
+    badgeElement.className = 'badge badge-primary';
+    badgeElement.textContent = defaultText;
+  }
+
+  // Toast System
   function showToast(message, type = 'info') {
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
 
-    let iconClass = 'fa-circle-info';
-    if (type === 'success') iconClass = 'fa-circle-check text-green';
-    if (type === 'error') iconClass = 'fa-circle-xmark text-red';
+    let icon = 'fa-circle-info';
+    if (type === 'success') icon = 'fa-circle-check';
+    if (type === 'error') icon = 'fa-triangle-exclamation';
 
-    toast.innerHTML = `<i class="fa-solid ${iconClass}"></i> <span>${message}</span>`;
+    toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
     elements.toastContainer.appendChild(toast);
 
     setTimeout(() => {
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateX(100%)';
-      setTimeout(() => toast.remove(), 300);
-    }, 4000);
+      toast.classList.add('fade-out');
+      setTimeout(() => toast.remove(), 400);
+    }, 3500);
   }
 
+  // Initialize App Router
   init();
 });
