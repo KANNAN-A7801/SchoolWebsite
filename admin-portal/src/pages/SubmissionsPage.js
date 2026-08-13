@@ -153,12 +153,10 @@ export const SubmissionsPage = ({ searchFilter }) => {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Student Name</th>
+                <th>Student email</th>
                 <th>Grade / Class</th>
-                <th>Course & Chapter</th>
                 <th>Submitted At</th>
                 <th>Status</th>
-                <th>Score / Grade</th>
                 <th>Reviewer Notes</th>
                 <th>Actions</th>
               </tr>

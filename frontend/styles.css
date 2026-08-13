@@ -746,24 +746,47 @@ p, span, li, a {
   max-width: 100% !important;
 }
 
+.quiz-questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  width: 100% !important;
+}
+
 .quiz-question-card {
-  margin-bottom: 1.25rem;
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  transition: var(--transition-fast);
+  width: 100% !important;
+}
+
+.quiz-question-card.unanswered-warning {
+  border-color: var(--error-red) !important;
+  background: #FEF2F2 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
 }
 
 .question-num {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   text-transform: uppercase;
   font-weight: 700;
   color: var(--primary-blue);
   letter-spacing: 0.5px;
-  display: block;
-  margin-bottom: 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
 }
 
 .question-text {
   font-size: 1.05rem;
   color: var(--dark-navy);
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 .quiz-options-group {
@@ -846,12 +869,68 @@ p, span, li, a {
   width: 100% !important;
 }
 
+.result-alert.result-danger {
+  background: #FEF2F2 !important;
+  border-color: var(--error-red) !important;
+  color: var(--error-red) !important;
+}
+
 .result-alert i {
   font-size: 2rem;
   flex-shrink: 0;
 }
 
-/* Step 5: Task & File Upload Dropzone */
+/* Step 5: Compact Inline Email Input & Task Upload */
+.submission-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1.25rem;
+  width: 100% !important;
+  flex-wrap: wrap;
+}
+
+.email-input-inline-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 360px;
+  min-width: 240px;
+}
+
+.input-email-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--primary-blue);
+  font-size: 0.95rem;
+  pointer-events: none;
+}
+
+.compact-email-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.4rem;
+  font-size: 0.9rem;
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--dark-navy);
+  outline: none;
+  font-family: inherit;
+  transition: var(--transition-fast);
+}
+
+.compact-email-input:focus {
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.compact-email-input.input-error {
+  border-color: var(--error-red);
+  background: #FEF2F2;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
 .task-instructions-card {
   display: flex;
   gap: 1.25rem;

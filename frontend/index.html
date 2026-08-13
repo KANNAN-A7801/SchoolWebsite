@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Engloray Learning LMS - Grade 5 Computer Skills</title>
   <meta name="description" content="Interactive Class 5 Learning Management System - Chapter 1 Computer Fundamentals">
+  <base href="/">
 
   <!-- Google Fonts: Inter & Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,7 +18,7 @@
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="/styles.css">
 </head>
 
 <body>
@@ -26,7 +27,7 @@
     <div class="header-container">
       <div class="header-top-row">
         <div class="brand-logo" id="logoHeaderHome" style="cursor: pointer;">
-          <img src="logo.png" alt="Engloray Learning Logo" class="logo-image">
+          <img src="/logo.png" alt="Engloray Learning Logo" class="logo-image">
           <div class="logo-text">
             <!-- <span class="brand-title">ENGLORAY LEARNING</span> -->
             <!-- <span class="brand-subtitle">LMS Platform</span> -->
@@ -237,13 +238,8 @@
 
             <div class="step-body">
               <div class="quiz-box">
-                <div class="quiz-question-card">
-                  <span class="question-num">Question 1 of 1</span>
-                  <h4 class="question-text" id="quizQuestionText">Which component is considered internal hardware?</h4>
-
-                  <div class="quiz-options-group" id="quizOptionsContainer">
-                    <!-- Dynamically rendered -->
-                  </div>
+                <div id="quizQuestionsContainer" class="quiz-questions-list">
+                  <!-- Dynamically rendered 5 Quiz Question Cards -->
                 </div>
 
                 <div class="quiz-result-message hidden" id="quizResultBox">
@@ -319,7 +315,11 @@
                 </div>
               </div>
 
-              <div class="step-actions">
+              <div class="step-actions submission-actions-row">
+                <div class="email-input-inline-wrap">
+                  <i class="fa-solid fa-envelope input-email-icon"></i>
+                  <input type="email" id="studentEmailInput" class="compact-email-input" placeholder="Enter student email (required) *" required>
+                </div>
                 <button class="btn btn-primary btn-lg" id="btnSubmitTask">
                   <i class="fa-solid fa-upload"></i> Upload & Submit Assignment
                 </button>
@@ -390,8 +390,8 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <!-- Load Central JSON Dataset first, then Application logic -->
-  <script src="coursesData.js"></script>
-  <script src="app.js"></script>
+  <script src="/coursesData.js"></script>
+  <script src="/app.js"></script>
 </body>
 
 </html>
