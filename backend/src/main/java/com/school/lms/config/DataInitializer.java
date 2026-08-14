@@ -18,11 +18,9 @@ import com.school.lms.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,14 +35,13 @@ public class DataInitializer implements CommandLineRunner {
     private final DayClassRepository dayClassRepository;
     private final QuizRepository quizRepository;
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
     public void run(String... args) throws Exception {
         log.info("Checking database initialization and integrity status for all grades...");
 
-        // 1. Ensure Grades 3 to 10 exist
+        // 1. Ensure Grade entities exist cleanly for Grades 3 to 10
         for (int i = 3; i <= 10; i++) {
             Optional<Grade> gradeOpt = gradeRepository.findByGradeNumber(i);
             Grade grade;
@@ -57,6 +54,7 @@ public class DataInitializer implements CommandLineRunner {
             } else {
                 grade = gradeOpt.get();
                 grade.setName("Class " + i + " Curriculum");
+                grade.setGradeNumber(i);
                 grade = gradeRepository.save(grade);
             }
 
@@ -121,30 +119,26 @@ public class DataInitializer implements CommandLineRunner {
             }
         }
 
-        // 2. Ensure test users exist
-        Grade class5 = gradeRepository.findByGradeNumber(5).orElse(null);
+        // 2. Align student user grade associations in database based on student record IDs and emails
+        Grade grade3 = gradeRepository.findByGradeNumber(3).orElse(null);
+        Grade grade5 = gradeRepository.findByGradeNumber(5).orElse(null);
 
-        if (!userRepository.existsByEmail("student5@school.com")) {
-            User student5 = User.builder()
-                    .email("student5@school.com")
-                    .password(passwordEncoder.encode("student123"))
-                    .fullName("Emma Watson (Class 5 Student & Parent)")
-                    .role(Role.ROLE_STUDENT)
-                    .grade(class5)
-                    .build();
-            userRepository.save(student5);
+        List<User> allStudents = userRepository.findByRole(Role.ROLE_STUDENT);
+        for (User u : allStudents) {
+            String email = u.getEmail() != null ? u.getEmail().toLowerCase() : "";
+            if (email.equals("student3@school.com") || email.equals("newstudent@school.com") || (u.getGrade() != null && u.getGrade().getId() == 3L)) {
+                if (grade3 != null) {
+                    u.setGrade(grade3);
+                    userRepository.save(u);
+                }
+            } else if (email.equals("student5@school.com") || email.equals("newstudent5@school.com") || (u.getGrade() != null && u.getGrade().getId() == 5L)) {
+                if (grade5 != null) {
+                    u.setGrade(grade5);
+                    userRepository.save(u);
+                }
+            }
         }
 
-        if (!userRepository.existsByEmail("admin@school.com")) {
-            User admin = User.builder()
-                    .email("admin@school.com")
-                    .password(passwordEncoder.encode("admin123"))
-                    .fullName("System Administrator")
-                    .role(Role.ROLE_ADMIN)
-                    .build();
-            userRepository.save(admin);
-        }
-
-        log.info("Database auto-repair & full 8-grade curriculum initialization complete!");
+        log.info("Database auto-repair & student grade alignment complete!");
     }
 }

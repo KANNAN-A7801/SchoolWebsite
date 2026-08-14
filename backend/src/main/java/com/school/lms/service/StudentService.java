@@ -10,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -136,11 +137,24 @@ public class StudentService {
             // Fallback file URL
         }
 
-        Submission submission = submissionRepository.findByStudentIdAndDayClassId(student.getId(), dayClass.getId())
-                .orElse(Submission.builder()
-                        .student(student)
-                        .dayClass(dayClass)
-                        .build());
+                // Check existing submission by student ID + day class ID OR student email + day class ID
+        Optional<Submission> existingSub = submissionRepository.findByStudentIdAndDayClassId(student.getId(), dayClass.getId());
+        if (existingSub.isEmpty()) {
+            List<Submission> allSubs = submissionRepository.findAll();
+            for (Submission s : allSubs) {
+                if (s.getStudent() != null && s.getStudent().getEmail() != null &&
+                    s.getStudent().getEmail().equalsIgnoreCase(student.getEmail()) &&
+                    s.getDayClass() != null && s.getDayClass().getId().equals(dayClass.getId())) {
+                    existingSub = Optional.of(s);
+                    break;
+                }
+            }
+        }
+
+        Submission submission = existingSub.orElse(Submission.builder()
+                .student(student)
+                .dayClass(dayClass)
+                .build());
 
         submission.setFileUrl(fileUrl);
         submission.setFileName(fileName);

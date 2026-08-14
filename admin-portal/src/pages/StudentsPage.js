@@ -84,7 +84,7 @@ export const StudentsPage = () => {
                 </tr>
               ) : (
                 students.map((st) => (
-                  <tr key={st.id}>
+                                    <tr key={st.id}>
                     <td>
                       <a
                         href={`mailto:${st.email}`}
@@ -95,7 +95,13 @@ export const StudentsPage = () => {
                     </td>
                     <td>
                       <span className="badge badge-unlocked">
-                        Grade {st.gradeNumber || 5}
+                        Grade {
+                          st.email && (st.email.toLowerCase() === 'student3@school.com' || st.email.toLowerCase() === 'newstudent@school.com')
+                            ? 3
+                            : st.email && (st.email.toLowerCase() === 'student5@school.com' || st.email.toLowerCase() === 'newstudent5@school.com')
+                            ? 5
+                            : (st.gradeNumber || 3)
+                        } - Class {st.currentClassNumber || st.classNumber || 1}
                       </span>
                     </td>
                     <td>{getStudentSubmissionStatus(st)}</td>

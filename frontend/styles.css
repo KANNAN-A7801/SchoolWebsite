@@ -198,6 +198,19 @@ p, span, li, a {
   background: var(--bg-blue-subtle);
 }
 
+.grade-display-badge {
+  background: var(--bg-blue-light);
+  color: var(--primary-blue);
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0.4rem 1rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border-blue);
+  display: inline-flex;
+  align-items: center;
+  box-shadow: var(--shadow-sm);
+}
+
 .breadcrumb-separator {
   color: var(--text-light);
   font-size: 0.7rem;

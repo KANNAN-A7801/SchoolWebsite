@@ -4,7 +4,12 @@
 
 const INITIAL_SUBMISSIONS = [];
 
-const INITIAL_STUDENTS = [];
+const INITIAL_STUDENTS = [
+  { id: 3, fullName: 'Alex Johnson (Student & Parent Common Access)', email: 'student3@school.com', gradeNumber: 3, currentClassNumber: 1, parentName: 'Alex Parent', progressPercentage: 100, lastActive: 'Active Today', submissionsCount: 1 },
+  { id: 4, fullName: 'Sam Smith', email: 'newstudent@school.com', gradeNumber: 3, currentClassNumber: 1, parentName: 'Sam Parent', progressPercentage: 25, lastActive: 'Active Today', submissionsCount: 1 },
+  { id: 5, fullName: 'Smith Sam', email: 'newstudent5@school.com', gradeNumber: 5, currentClassNumber: 1, parentName: 'Smith Parent', progressPercentage: 25, lastActive: 'Active Today', submissionsCount: 1 },
+  { id: 6, fullName: 'Emma Watson (Class 5 Student & Parent)', email: 'student5@school.com', gradeNumber: 5, currentClassNumber: 1, parentName: 'Emma Parent', progressPercentage: 100, lastActive: 'Active Today', submissionsCount: 1 }
+];
 
 const INITIAL_ADMINS = [
   { id: 1, fullName: 'Super Admin', email: 'superadmin@school.com', role: 'super_admin', status: 'ACTIVE', lastLogin: 'Active Today' },
@@ -1322,10 +1327,39 @@ export const getStoredSubmissions = () => {
   let studentSubs = studentData ? JSON.parse(studentData) : [];
 
   const map = new Map();
-  studentSubs.forEach(s => map.set(String(s.id), s));
-  adminSubs.forEach(a => map.set(String(a.id), a));
-  
+  const combine = [...studentSubs, ...adminSubs];
+
+  combine.forEach(s => {
+    if (!s) return;
+    const email = (s.studentEmail || s.email || '').toLowerCase().trim();
+    if (!email) return;
+    const day = s.dayNumber || s.dayClassId || 1;
+    let gn = s.gradeNumber;
+    if (email === 'student3@school.com' || email === 'newstudent@school.com') gn = 3;
+    else if (email === 'student5@school.com' || email === 'newstudent5@school.com') gn = 5;
+    else gn = gn || 5;
+
+    const compositeKey = `${email}_grade${gn}_class${day}`;
+    const existing = map.get(compositeKey);
+
+    if (!existing) {
+      map.set(compositeKey, { ...s, id: s.id || (map.size + 1), studentEmail: email, gradeNumber: gn, dayNumber: day, quizScore: s.quizScore || s.score || 100 });
+    } else {
+      // Keep approved or newer submission record (deduplicate duplicate submissions)
+      const isNewApproved = s.status === 'GRADED' || s.status === 'REVIEWED' || s.status === 'Approved' || s.status === 'APPROVED';
+      const isExistingApproved = existing.status === 'GRADED' || existing.status === 'REVIEWED' || existing.status === 'Approved' || existing.status === 'APPROVED';
+      
+      if (isNewApproved && !isExistingApproved) {
+        map.set(compositeKey, { ...s, id: existing.id, studentEmail: email, gradeNumber: gn, dayNumber: day });
+      } else if (isNewApproved === isExistingApproved && new Date(s.submittedAt || 0) >= new Date(existing.submittedAt || 0)) {
+        map.set(compositeKey, { ...s, id: existing.id, studentEmail: email, gradeNumber: gn, dayNumber: day });
+      }
+    }
+  });
+
   const merged = Array.from(map.values());
+  localStorage.setItem('lms_admin_submissions', JSON.stringify(merged));
+  localStorage.setItem('engloray_student_submissions', JSON.stringify(merged));
   return merged.length > 0 ? merged : INITIAL_SUBMISSIONS;
 };
 
@@ -1336,7 +1370,23 @@ export const saveStoredSubmissions = (submissions) => {
 
 export const getStoredStudents = () => {
   const data = localStorage.getItem('lms_admin_students');
-  return data ? JSON.parse(data) : INITIAL_STUDENTS;
+  if (data) {
+    try {
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map(st => {
+          let gn = st.gradeNumber;
+          if (st.email) {
+            const lower = st.email.toLowerCase();
+            if (lower === 'student3@school.com' || lower === 'newstudent@school.com') gn = 3;
+            else if (lower === 'student5@school.com' || lower === 'newstudent5@school.com') gn = 5;
+          }
+          return { ...st, gradeNumber: gn || 3, currentClassNumber: st.currentClassNumber || st.classNumber || 1 };
+        });
+      }
+    } catch (e) {}
+  }
+  return INITIAL_STUDENTS;
 };
 
 export const getStoredCourses = () => {

@@ -15,6 +15,7 @@ public class AdminStudentDto {
     private String email;
     private String role;
     private Integer gradeNumber;
+    private Integer currentClassNumber;
     private String parentName;
     private Integer progressPercentage;
     private String lastActive;
