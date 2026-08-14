@@ -22,8 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     classLearningPage: document.getElementById('classLearningPage'),
     courseClassesGrid: document.getElementById('courseClassesGrid'),
     logoHeaderHome: document.getElementById('logoHeaderHome'),
-    btnBackToCourse: document.getElementById('btnBackToCourse'),
-    gradeSelectDropdown: document.getElementById('gradeSelectDropdown'),
+    gradeDisplayBadge: document.getElementById('gradeDisplayBadge'),
 
     // Hero Header
     activeDayBadge: document.getElementById('activeDayBadge'),
@@ -181,8 +180,8 @@ document.addEventListener('DOMContentLoaded', () => {
       COURSES_DATA.classes = firstChapter.classes;
       COURSES_DATA.currentGradeNumber = targetGradeNum;
 
-      if (elements.gradeSelectDropdown) {
-        elements.gradeSelectDropdown.value = targetGradeNum.toString();
+      if (elements.gradeDisplayBadge) {
+        elements.gradeDisplayBadge.textContent = `Grade ${targetGradeNum}`;
       }
 
       const activeBreadcrumb = document.getElementById('breadcrumbChapterTitle');
@@ -538,8 +537,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     ensureClass1UnlockedForAllGrades();
 
-    if (elements.gradeSelectDropdown) {
-      elements.gradeSelectDropdown.value = gradeNumber.toString();
+    if (elements.gradeDisplayBadge) {
+      elements.gradeDisplayBadge.textContent = `Grade ${gradeNumber}`;
     }
 
     const activeBreadcrumb = document.getElementById('breadcrumbChapterTitle');

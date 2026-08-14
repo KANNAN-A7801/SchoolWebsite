@@ -27,6 +27,7 @@ public class AdminSubmissionDto {
     private String fileName;
     private SubmissionStatus status;
     private Integer score;
+    private Integer quizScore;
     private String teacherFeedback;
     private LocalDateTime submittedAt;
 }

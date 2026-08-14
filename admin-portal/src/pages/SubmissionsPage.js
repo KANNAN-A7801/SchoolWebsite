@@ -19,10 +19,33 @@ export const SubmissionsPage = ({ searchFilter }) => {
     return () => clearInterval(interval);
   }, []);
 
-  const fetchSubmissions = async () => {
+    const fetchSubmissions = async () => {
     try {
       const data = await apiService.getSubmissions();
-      setSubmissions(data);
+      const map = new Map();
+      (data || []).forEach(sub => {
+        if (!sub) return;
+        const email = (sub.studentEmail || '').toLowerCase().trim();
+        if (!email) return;
+        const day = sub.dayNumber || sub.dayClassId || 1;
+        const gn = getStudentGradeNumber(sub);
+        const key = `${email}_g${gn}_c${day}`;
+
+        const existing = map.get(key);
+        if (!existing) {
+          map.set(key, { ...sub, gradeNumber: gn, dayNumber: day });
+        } else {
+          const isNewApproved = sub.status === 'GRADED' || sub.status === 'REVIEWED' || sub.status === 'APPROVED' || sub.status === 'Approved';
+          const isExistingApproved = existing.status === 'GRADED' || existing.status === 'REVIEWED' || existing.status === 'APPROVED' || existing.status === 'Approved';
+
+          if (isNewApproved && !isExistingApproved) {
+            map.set(key, { ...sub, gradeNumber: gn, dayNumber: day });
+          } else if (isNewApproved === isExistingApproved && new Date(sub.submittedAt || 0) >= new Date(existing.submittedAt || 0)) {
+            map.set(key, { ...sub, gradeNumber: gn, dayNumber: day });
+          }
+        }
+      });
+      setSubmissions(Array.from(map.values()));
     } catch (err) {
       console.error('Error fetching submissions:', err);
     } finally {
@@ -30,9 +53,12 @@ export const SubmissionsPage = ({ searchFilter }) => {
     }
   };
 
-  const handleOpenModal = (sub) => {
+    const handleOpenModal = (sub) => {
     setSelectedSubmission(sub);
-    setReviewerScore(sub.score || 100);
+    const scoreVal = sub.quizScore !== undefined && sub.quizScore !== null 
+      ? sub.quizScore 
+      : (sub.score !== undefined && sub.score !== null ? sub.score : 100);
+    setReviewerScore(scoreVal);
     setReviewerFeedback(sub.teacherFeedback || 'Approved! Chapter completed and next chapter unlocked.');
   };
 
@@ -65,6 +91,14 @@ export const SubmissionsPage = ({ searchFilter }) => {
       setActionLoading(false);
     }
   };
+
+  const getStudentGradeNumber = (sub) => {
+    const email = (sub.studentEmail || '').toLowerCase();
+    if (email === 'student3@school.com' || email === 'newstudent@school.com') return 3;
+    if (email === 'student5@school.com' || email === 'newstudent5@school.com') return 5;
+    return sub.gradeNumber || 5;
+  };
+
 
   // Filter & Sort Logic
   const filteredSubmissions = submissions.filter((sub) => {
@@ -175,7 +209,7 @@ export const SubmissionsPage = ({ searchFilter }) => {
                       <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>File: {sub.fileName}</div>
                     </td>
                     <td>
-                      <span className="badge badge-unlocked">Grade {sub.gradeNumber} - Class {sub.dayNumber || 1}</span>
+                      <span className="badge badge-unlocked">Grade {getStudentGradeNumber(sub)} - Class {sub.dayNumber || 1}</span>
                     </td>
                     <td style={{ fontSize: '12px' }}>
                       {new Date(sub.submittedAt).toLocaleDateString()} • {new Date(sub.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -265,7 +299,15 @@ export const SubmissionsPage = ({ searchFilter }) => {
 
               {/* Review Controls Form */}
               <div className="form-group">
-                <label className="form-label">Score / Grade (%)</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label className="form-label" style={{ margin: 0 }}>Score / Grade (%)</label>
+                  {selectedSubmission && (
+                    <span style={{ fontSize: '11px', color: 'var(--primary)', background: 'var(--bg-subtle)', padding: '2px 8px', borderRadius: '4px', fontWeight: '600' }}>
+                      <i className="fa-solid fa-award" style={{ marginRight: '4px' }}></i>
+                      Quiz Score: {selectedSubmission.quizScore !== undefined && selectedSubmission.quizScore !== null ? selectedSubmission.quizScore : (selectedSubmission.score || 100)}%
+                    </span>
+                  )}
+                </div>
                 <input
                   type="number"
                   min="0"
@@ -291,6 +333,8 @@ export const SubmissionsPage = ({ searchFilter }) => {
                 <i className="fa-solid fa-unlock"></i> <strong>Chapter Unlock Workflow Note:</strong> Approving this submission updates the student backend database and automatically unlocks the next chapter for {selectedSubmission.studentName} in their student portal.
               </div>
             </div>
+
+
 
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={() => setSelectedSubmission(null)}>
